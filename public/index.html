@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>WidBid Chat Test</title>
+  <style>
+    body { font-family: Arial; background: #1a1a2e; color: white; padding: 20px; }
+    #messages { height: 300px; overflow-y: auto; background: #16213e; padding: 10px; border-radius: 8px; margin-bottom: 10px; }
+    input { padding: 8px; width: 70%; background: #0f3460; color: white; border: none; border-radius: 4px; }
+    button { padding: 8px 16px; background: #e94560; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px; }
+    .msg { margin: 5px 0; padding: 5px; background: #0f3460; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h2>WidBid - اختبار الدردشة</h2>
+  <div id="messages"></div>
+  <input id="msgInput" placeholder="اكتب رسالة..." />
+  <button onclick="sendMessage()">إرسال</button>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const username = 'tamer';
+    const room_id = 1;
+    const user_id = 1;
+
+    socket.emit('joinRoom', { room_id, username });
+
+    socket.on('newMessage', (data) => {
+      const div = document.createElement('div');
+      div.className = 'msg';
+      div.innerHTML = '<b>' + data.username + ':</b> ' + data.message;
+      document.getElementById('messages').appendChild(div);
+    });
+
+    socket.on('userJoined', (data) => {
+      const div = document.createElement('div');
+      div.className = 'msg';
+      div.innerHTML = '<i>' + data.username + ' انضم للغرفة</i>';
+      document.getElementById('messages').appendChild(div);
+    });
+
+    function sendMessage() {
+      const message = document.getElementById('msgInput').value;
+      if (message.trim()) {
+        socket.emit('sendMessage', { room_id, user_id, username, message });
+        document.getElementById('msgInput').value = '';
+      }
+    }
+
+    document.getElementById('msgInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
+  </script>
+</body>
+</html>

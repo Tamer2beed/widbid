@@ -1,0 +1,63 @@
+const express = require('express');
+const http = require('http');
+const socketio = require('socket.io');
+const cors = require('cors');
+require('dotenv').config();
+const db = require('./db');
+const authRoutes = require('./routes/auth');
+const roomRoutes = require('./routes/rooms');
+const app = express();
+const server = http.createServer(app);
+const io = socketio(server, {
+  cors: { origin: '*' }
+});
+
+app.use(cors());
+app.use(express.json());
+app.use('/api/auth', authRoutes);
+app.use('/api/rooms', roomRoutes);
+app.use(express.static('public'));
+
+app.get('/', (req, res) => {
+  res.send('WidBid Server is running');
+});
+
+io.on('connection', (socket) => {
+  console.log('User connected: ' + socket.id);
+
+  socket.on('joinRoom', (data) => {
+    socket.join(data.room_id);
+    console.log(data.username + ' joined room ' + data.room_id);
+    io.to(data.room_id).emit('userJoined', { username: data.username });
+  });
+
+  socket.on('sendMessage', async (data) => {
+    try {
+      await db.query(
+        'INSERT INTO messages (room_id, sender_id, content) VALUES (?, ?, ?)',
+        [data.room_id, data.user_id, data.message]
+      );
+      io.to(data.room_id).emit('newMessage', {
+        username: data.username,
+        message: data.message,
+        room_id: data.room_id
+      });
+    } catch (err) {
+      console.error('Message error:', err);
+    }
+  });
+
+  socket.on('leaveRoom', (data) => {
+    socket.leave(data.room_id);
+    io.to(data.room_id).emit('userLeft', { username: data.username });
+  });
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected: ' + socket.id);
+  });
+});
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log('Server running on port ' + PORT);
+});
