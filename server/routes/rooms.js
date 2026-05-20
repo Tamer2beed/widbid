@@ -38,5 +38,31 @@ router.post('/join', async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
+const { verifyToken, isRoomAdmin } = require('../middleware');
 
+router.post('/setrole', verifyToken, isRoomAdmin, async (req, res) => {
+  const { room_id, user_id, role } = req.body;
+  try {
+    await db.query(
+      'UPDATE room_members SET role = ? WHERE room_id = ? AND user_id = ?',
+      [role, room_id, user_id]
+    );
+    res.json({ success: true, message: 'Role updated' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+router.post('/kick', verifyToken, isRoomAdmin, async (req, res) => {
+  const { room_id, user_id } = req.body;
+  try {
+    await db.query(
+      'DELETE FROM room_members WHERE room_id = ? AND user_id = ?',
+      [room_id, user_id]
+    );
+    res.json({ success: true, message: 'User kicked' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
 module.exports = router;
