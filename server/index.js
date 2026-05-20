@@ -25,9 +25,21 @@ app.get('/', (req, res) => {
 io.on('connection', (socket) => {
   console.log('User connected: ' + socket.id);
 
-  socket.on('joinRoom', (data) => {
+socket.on('joinRoom', async (data) => {
     socket.join(data.room_id);
-    console.log(data.username + ' joined room ' + data.room_id);
+    socket.username = data.username;
+    socket.room_id = data.room_id;
+
+    const [messages] = await db.query(
+      'SELECT messages.content, users.username FROM messages JOIN users ON messages.sender_id = users.id WHERE messages.room_id = ? ORDER BY messages.created_at DESC LIMIT 50',
+      [data.room_id]
+    );
+
+    socket.emit('messageHistory', messages.reverse());
+
+    const roomSockets = await io.in(data.room_id).fetchSockets();
+    const onlineUsers = roomSockets.map(s => s.username);
+    io.to(data.room_id).emit('onlineUsers', onlineUsers);
     io.to(data.room_id).emit('userJoined', { username: data.username });
   });
 

@@ -4,18 +4,30 @@
   <meta charset="UTF-8">
   <title>WidBid Chat Test</title>
   <style>
-    body { font-family: Arial; background: #1a1a2e; color: white; padding: 20px; }
-    #messages { height: 300px; overflow-y: auto; background: #16213e; padding: 10px; border-radius: 8px; margin-bottom: 10px; }
+    body { font-family: Arial; background: #1a1a2e; color: white; padding: 20px; display: flex; gap: 20px; }
+    #chatBox { flex: 1; }
+    #sidebar { width: 200px; background: #16213e; padding: 10px; border-radius: 8px; }
+    #messages { height: 400px; overflow-y: auto; background: #16213e; padding: 10px; border-radius: 8px; margin-bottom: 10px; }
     input { padding: 8px; width: 70%; background: #0f3460; color: white; border: none; border-radius: 4px; }
-    button { padding: 8px 16px; background: #e94560; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px; }
+    button { padding: 8px 16px; background: #e94560; color: white; border: none; border-radius: 4px; cursor: pointer; }
     .msg { margin: 5px 0; padding: 5px; background: #0f3460; border-radius: 4px; }
+    .system { color: #aaa; font-style: italic; }
+    h3 { color: #e94560; margin-top: 0; }
+    #userList { list-style: none; padding: 0; }
+    #userList li { padding: 5px; border-bottom: 1px solid #0f3460; }
   </style>
 </head>
 <body>
-  <h2>WidBid - اختبار الدردشة</h2>
-  <div id="messages"></div>
-  <input id="msgInput" placeholder="اكتب رسالة..." />
-  <button onclick="sendMessage()">إرسال</button>
+  <div id="chatBox">
+    <h2>WidBid - غرفة المبتدئين</h2>
+    <div id="messages"></div>
+    <input id="msgInput" placeholder="اكتب رسالة..." />
+    <button onclick="sendMessage()">إرسال</button>
+  </div>
+  <div id="sidebar">
+    <h3>المتصلون</h3>
+    <ul id="userList"></ul>
+  </div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
@@ -26,19 +38,46 @@
 
     socket.emit('joinRoom', { room_id, username });
 
+    socket.on('messageHistory', (messages) => {
+      messages.forEach(msg => addMessage(msg.username, msg.content, false));
+    });
+
     socket.on('newMessage', (data) => {
-      const div = document.createElement('div');
-      div.className = 'msg';
-      div.innerHTML = '<b>' + data.username + ':</b> ' + data.message;
-      document.getElementById('messages').appendChild(div);
+      addMessage(data.username, data.message, false);
     });
 
     socket.on('userJoined', (data) => {
+      addSystem(data.username + ' انضم للغرفة');
+    });
+
+    socket.on('userLeft', (data) => {
+      addSystem(data.username + ' غادر الغرفة');
+    });
+
+    socket.on('onlineUsers', (users) => {
+      const list = document.getElementById('userList');
+      list.innerHTML = '';
+      users.forEach(u => {
+        const li = document.createElement('li');
+        li.textContent = u;
+        list.appendChild(li);
+      });
+    });
+
+    function addMessage(username, message, isMe) {
       const div = document.createElement('div');
       div.className = 'msg';
-      div.innerHTML = '<i>' + data.username + ' انضم للغرفة</i>';
+      div.innerHTML = '<b>' + username + ':</b> ' + message;
       document.getElementById('messages').appendChild(div);
-    });
+      document.getElementById('messages').scrollTop = 999999;
+    }
+
+    function addSystem(text) {
+      const div = document.createElement('div');
+      div.className = 'msg system';
+      div.textContent = text;
+      document.getElementById('messages').appendChild(div);
+    }
 
     function sendMessage() {
       const message = document.getElementById('msgInput').value;
