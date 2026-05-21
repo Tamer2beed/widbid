@@ -7,6 +7,7 @@ const db = require('./db');
 const authRoutes = require('./routes/auth');
 const roomRoutes = require('./routes/rooms');
 const roleRoutes = require('./routes/roles');
+const { router: pointsRouter, addPoints, POINTS_PER_MESSAGE } = require('./routes/points');
 const app = express();
 const server = http.createServer(app);
 const io = socketio(server, {
@@ -18,6 +19,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/roles', roleRoutes);
+app.use('/api/points', pointsRouter);
 app.use(express.static('public'));
 
 app.get('/', (req, res) => {
@@ -56,6 +58,7 @@ socket.on('joinRoom', async (data) => {
         message: data.message,
         room_id: data.room_id
       });
+      await addPoints(data.user_id, POINTS_PER_MESSAGE, 'Message sent');
     } catch (err) {
       console.error('Message error:', err);
     }
