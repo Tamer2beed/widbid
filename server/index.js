@@ -6,6 +6,7 @@ require('dotenv').config();
 const db = require('./db');
 const authRoutes = require('./routes/auth');
 const roomRoutes = require('./routes/rooms');
+const roleRoutes = require('./routes/roles');
 const app = express();
 const server = http.createServer(app);
 const io = socketio(server, {
@@ -16,6 +17,7 @@ app.use(cors());
 app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/rooms', roomRoutes);
+app.use('/api/roles', roleRoutes);
 app.use(express.static('public'));
 
 app.get('/', (req, res) => {
