@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WidBid - الألعاب</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial; background: #0d0d1a; color: white; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .navbar { position: fixed; top: 0; width: 100%; background: #16213e; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1a2a4a; }
+    .navbar h1 { color: #c9a84c; font-size: 20px; }
+    .btn-back { padding: 6px 14px; background: transparent; color: #c9a84c; border: 1px solid #c9a84c; border-radius: 6px; cursor: pointer; font-size: 13px; }
+    .game-container { margin-top: 80px; text-align: center; }
+    h2 { color: #c9a84c; margin-bottom: 10px; font-size: 22px; }
+    .status { color: #aaa; margin-bottom: 20px; font-size: 15px; min-height: 24px; }
+    .board { display: grid; grid-template-columns: repeat(3, 100px); grid-template-rows: repeat(3, 100px); gap: 8px; margin: 0 auto 25px; }
+    .cell { width: 100px; height: 100px; background: #16213e; border: 2px solid #1a2a4a; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 40px; cursor: pointer; transition: 0.2s; user-select: none; }
+    .cell:hover:not(.disabled) { border-color: #c9a84c; background: #1a2a4a; }
+    .cell.x { color: #e94560; }
+    .cell.o { color: #c9a84c; }
+    .cell.disabled { cursor: not-allowed; opacity: 0.7; }
+    .btns { display: flex; gap: 10px; justify-content: center; }
+    .btn { padding: 10px 25px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold; }
+    .btn-primary { background: #c9a84c; color: #0d0d1a; }
+    .btn-secondary { background: transparent; color: #aaa; border: 1px solid #1a2a4a; }
+    .players { display: flex; gap: 30px; justify-content: center; margin-bottom: 15px; }
+    .player { padding: 8px 20px; border-radius: 8px; font-size: 14px; }
+    .player.x { background: #2a1a1a; color: #e94560; border: 1px solid #e94560; }
+    .player.o { background: #2a2a0a; color: #c9a84c; border: 1px solid #c9a84c; }
+    .player.active { box-shadow: 0 0 10px currentColor; }
+    .debug { color: #555; font-size: 11px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="navbar">
+    <h1>WidBid Games</h1>
+    <button class="btn-back" onclick="window.location.href='/chat.html'">العودة للغرفة</button>
+  </div>
+
+  <div class="game-container">
+    <h2>Tic Tac Toe</h2>
+    <div class="players">
+      <div class="player x" id="playerX">X: ينتظر...</div>
+      <div class="player o" id="playerO">O: ينتظر...</div>
+    </div>
+    <div class="status" id="status">في انتظار لاعب آخر...</div>
+    <div class="board" id="board">
+      <div class="cell disabled" onclick="makeMove(0)"></div>
+      <div class="cell disabled" onclick="makeMove(1)"></div>
+      <div class="cell disabled" onclick="makeMove(2)"></div>
+      <div class="cell disabled" onclick="makeMove(3)"></div>
+      <div class="cell disabled" onclick="makeMove(4)"></div>
+      <div class="cell disabled" onclick="makeMove(5)"></div>
+      <div class="cell disabled" onclick="makeMove(6)"></div>
+      <div class="cell disabled" onclick="makeMove(7)"></div>
+      <div class="cell disabled" onclick="makeMove(8)"></div>
+    </div>
+    <div class="btns">
+      <button class="btn btn-primary" onclick="restartGame()">لعبة جديدة</button>
+      <button class="btn btn-secondary" onclick="window.location.href='/chat.html'">خروج</button>
+    </div>
+    <div class="debug" id="debug"></div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const username = localStorage.getItem('username');
+    const room_id = localStorage.getItem('room_id');
+    let mySymbol = null;
+    let myTurn = false;
+    let gameActive = false;
+
+    if (!username || !room_id) {
+      window.location.href = '/';
+    }
+
+    document.getElementById('debug').textContent = 'المستخدم: ' + username + ' | الغرفة: ' + room_id;
+
+    socket.on('connect', () => {
+      socket.emit('joinGame', { room_id, username, game: 'tictactoe' });
+    });
+
+    socket.on('gameStart', (data) => {
+      mySymbol = data.symbol;
+      gameActive = true;
+      myTurn = mySymbol === 'X';
+
+      document.getElementById('playerX').textContent = 'X: ' + data.playerX;
+      document.getElementById('playerO').textContent = 'O: ' + data.playerO;
+      document.getElementById('status').textContent = myTurn ? 'دورك!' : 'دور الخصم...';
+
+      document.querySelectorAll('.cell').forEach(c => {
+        c.textContent = '';
+        c.className = 'cell';
+        if (!myTurn) c.classList.add('disabled');
+      });
+
+      updateTurnHighlight();
+    });
+
+    socket.on('gameMove', (data) => {
+      const cells = document.querySelectorAll('.cell');
+      cells[data.index].textContent = data.symbol;
+      cells[data.index].classList.add(data.symbol.toLowerCase(), 'disabled');
+
+      myTurn = data.nextTurn === mySymbol;
+      document.getElementById('status').textContent = myTurn ? 'دورك!' : 'دور الخصم...';
+
+      document.querySelectorAll('.cell').forEach(c => {
+        if (!c.textContent) {
+          if (myTurn) c.classList.remove('disabled');
+          else c.classList.add('disabled');
+        }
+      });
+
+      updateTurnHighlight();
+    });
+
+    socket.on('gameOver', (data) => {
+      gameActive = false;
+      myTurn = false;
+      document.querySelectorAll('.cell').forEach(c => c.classList.add('disabled'));
+      if (data.winner === 'draw') {
+        document.getElementById('status').textContent = 'تعادل! 🤝';
+      } else if (data.winner === mySymbol) {
+        document.getElementById('status').textContent = 'فزت! 🎉';
+      } else {
+        document.getElementById('status').textContent = 'خسرت! 😔';
+      }
+    });
+
+    socket.on('playerLeft', () => {
+      gameActive = false;
+      document.getElementById('status').textContent = 'غادر الخصم اللعبة';
+    });
+
+    function updateTurnHighlight() {
+      document.getElementById('playerX').classList.remove('active');
+      document.getElementById('playerO').classList.remove('active');
+      if (mySymbol === 'X' && myTurn) document.getElementById('playerX').classList.add('active');
+      if (mySymbol === 'O' && myTurn) document.getElementById('playerO').classList.add('active');
+      if (mySymbol === 'X' && !myTurn) document.getElementById('playerO').classList.add('active');
+      if (mySymbol === 'O' && !myTurn) document.getElementById('playerX').classList.add('active');
+    }
+
+    function makeMove(index) {
+      if (!myTurn || !gameActive) return;
+      const cell = document.querySelectorAll('.cell')[index];
+      if (cell.classList.contains('disabled') || cell.textContent) return;
+      socket.emit('gameMove', { room_id, index, symbol: mySymbol, game: 'tictactoe' });
+    }
+
+    function restartGame() {
+      socket.emit('restartGame', { room_id, game: 'tictactoe' });
+    }
+  </script>
+</body>
+</html>
