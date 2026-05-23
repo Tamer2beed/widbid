@@ -39,3 +39,16 @@ router.post('/login', async (req, res) => {
 });
 
 module.exports = router;
+const { verifyToken } = require('../middleware');
+
+router.get('/stats', verifyToken, async (req, res) => {
+  try {
+    const [users] = await db.query('SELECT COUNT(*) as count FROM users');
+    const [messages] = await db.query('SELECT COUNT(*) as count FROM messages');
+    res.json({ success: true, users: users[0].count, messages: messages[0].count });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+module.exports = router;

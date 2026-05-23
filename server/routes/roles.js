@@ -76,4 +76,26 @@ router.post('/revoke', verifyToken, async (req, res) => {
   }
 });
 
+router.post('/create', verifyToken, async (req, res) => {
+  const { name, level, name_color, badge_color, permissions } = req.body;
+  try {
+    const [myRole] = await db.query(
+      `SELECT global_roles.level FROM user_global_roles 
+       JOIN global_roles ON user_global_roles.role_id = global_roles.id 
+       WHERE user_global_roles.user_id = ? 
+       ORDER BY global_roles.level DESC LIMIT 1`,
+      [req.user.id]
+    );
+    if (myRole.length === 0 || myRole[0].level < 1000) {
+      return res.status(403).json({ success: false, message: 'Super Owner only' });
+    }
+    await db.query(
+      'INSERT INTO global_roles (name, level, name_color, badge_color, permissions) VALUES (?, ?, ?, ?, ?)',
+      [name, level, name_color || '#ffffff', badge_color || '#c9a84c', JSON.stringify(permissions || [])]
+    );
+    res.json({ success: true, message: 'Role created' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
 module.exports = router;

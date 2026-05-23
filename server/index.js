@@ -8,6 +8,7 @@ const authRoutes = require('./routes/auth');
 const roomRoutes = require('./routes/rooms');
 const roleRoutes = require('./routes/roles');
 const ownerRoutes = require('./routes/owner');
+const usersRoutes = require('./routes/users');
 const { router: pointsRouter, addPoints, POINTS_PER_MESSAGE } = require('./routes/points');
 
 const app = express();
@@ -22,6 +23,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/owner', ownerRoutes);
+app.use('/api/users', usersRoutes);
 app.use('/api/points', pointsRouter);
 app.use(express.static('public'));
 
