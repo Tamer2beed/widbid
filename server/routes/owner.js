@@ -31,10 +31,15 @@ router.post('/create', verifyToken, isSuperOwner, async (req, res) => {
     if (existing.length > 0) {
       return res.status(400).json({ success: false, message: 'User is already an owner' });
     }
-    await db.query(
-      'INSERT INTO owners (user_id, max_rooms, created_by) VALUES (?, ?, ?)',
-      [user_id, max_rooms || 100, req.user.id]
-    );
+    const [ownerRole] = await db.query(
+  "SELECT id FROM global_roles WHERE name = 'Owner' LIMIT 1"
+);
+if (ownerRole.length > 0) {
+  await db.query(
+    'INSERT INTO user_global_roles (user_id, role_id, assigned_by) VALUES (?, ?, ?)',
+    [user_id, ownerRole[0].id, req.user.id]
+  );
+}
     await db.query(
       `INSERT INTO user_global_roles (user_id, role_id, assigned_by) 
        VALUES (?, (SELECT id FROM global_roles WHERE name = 'Owner'), ?)`,

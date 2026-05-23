@@ -87,21 +87,23 @@
   <div class="page" id="page-owners">
     <div class="page-title">👑 إدارة الـ Owners</div>
     <div class="card">
-      <div class="card-title">إنشاء Owner جديد</div>
-      <div class="alert alert-success" id="owner-success"></div>
-      <div class="alert alert-error" id="owner-error"></div>
-      <div class="form-grid">
-        <div class="form-group">
-          <label>ID المستخدم</label>
-          <input type="number" id="owner-user-id" placeholder="رقم المستخدم" />
-        </div>
-        <div class="form-group">
-          <label>الحد الأقصى للغرف</label>
-          <input type="number" id="owner-max-rooms" placeholder="100" value="100" />
-        </div>
-      </div>
-      <button class="btn btn-gold" onclick="createOwner()">إنشاء Owner</button>
+  <div class="card-title">إنشاء Owner جديد</div>
+  <div class="alert alert-success" id="owner-success"></div>
+  <div class="alert alert-error" id="owner-error"></div>
+  <div class="form-grid">
+    <div class="form-group">
+      <label>اختر المستخدم</label>
+      <select id="owner-user-id">
+        <option value="">-- اختر مستخدم --</option>
+      </select>
     </div>
+    <div class="form-group">
+      <label>الحد الأقصى للغرف</label>
+      <input type="number" id="owner-max-rooms" placeholder="100" value="100" />
+    </div>
+  </div>
+  <button class="btn btn-gold" onclick="createOwner()">إنشاء Owner</button>
+</div>
     <div class="card">
       <div class="card-title">قائمة الـ Owners</div>
       <table>
@@ -263,28 +265,37 @@
     });
   }
 
-  async function createOwner() {
-    const user_id = document.getElementById('owner-user-id').value;
-    const max_rooms = document.getElementById('owner-max-rooms').value;
-    const res = await fetch('/api/owner/create', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', authorization: token },
-      body: JSON.stringify({ user_id: parseInt(user_id), max_rooms: parseInt(max_rooms) })
-    });
-    const data = await res.json();
-    const successEl = document.getElementById('owner-success');
-    const errorEl = document.getElementById('owner-error');
-    if (data.success) {
-      successEl.textContent = 'تم إنشاء Owner بنجاح!';
-      successEl.style.display = 'block';
-      errorEl.style.display = 'none';
-      loadOwners();
-    } else {
-      errorEl.textContent = data.message;
-      errorEl.style.display = 'block';
-      successEl.style.display = 'none';
-    }
+async function createOwner() {
+  const user_id = document.getElementById('owner-user-id').value;
+  const max_rooms = document.getElementById('owner-max-rooms').value;
+  
+  console.log('Token:', token);
+  console.log('User ID:', user_id);
+  
+  const res = await fetch('/api/owner/create', {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json', 
+      'authorization': token 
+    },
+    body: JSON.stringify({ user_id: parseInt(user_id), max_rooms: parseInt(max_rooms) })
+  });
+  const data = await res.json();
+  console.log('Response:', data);
+  
+  const successEl = document.getElementById('owner-success');
+  const errorEl = document.getElementById('owner-error');
+  if (data.success) {
+    successEl.textContent = 'تم إنشاء Owner بنجاح!';
+    successEl.style.display = 'block';
+    errorEl.style.display = 'none';
+    loadOwners();
+  } else {
+    errorEl.textContent = data.message;
+    errorEl.style.display = 'block';
+    successEl.style.display = 'none';
   }
+}
 
   async function createRole() {
     const name = document.getElementById('role-name').value;
@@ -315,7 +326,31 @@
     window.location.href = '/';
   }
 
+  loadStats();function logout() {
+    localStorage.clear();
+    window.location.href = '/';
+  }
+
+  async function loadUsersDropdown() {
+    const res = await fetch('/api/users/all', { headers: { authorization: token } });
+    const data = await res.json();
+    if (!data.success) return;
+    const select = document.getElementById('owner-user-id');
+    data.users.forEach(u => {
+      const option = document.createElement('option');
+      option.value = u.id;
+      option.textContent = u.username + ' (' + u.email + ')';
+      select.appendChild(option);
+    });
+  }
+
   loadStats();
+  loadUsersDropdown();
+</script>
+</body>
+</html>
+
+  loadUsersDropdown();
 </script>
 </body>
 </html>
