@@ -91,12 +91,13 @@
   <div class="alert alert-success" id="owner-success"></div>
   <div class="alert alert-error" id="owner-error"></div>
   <div class="form-grid">
-    <div class="form-group">
-      <label>اختر المستخدم</label>
-      <select id="owner-user-id">
-        <option value="">-- اختر مستخدم --</option>
-      </select>
-    </div>
+  <div class="form-group">
+  <label>ابحث عن مستخدم</label>
+  <input type="text" id="owner-search" placeholder="اكتب اسم المستخدم..." onkeyup="searchUsers()" autocomplete="off" />
+  <div id="search-results" style="background:#0a0a0f;border:1px solid #1a1a2e;border-radius:8px;max-height:200px;overflow-y:auto;display:none;margin-top:5px;"></div>
+  <input type="hidden" id="owner-user-id" />
+  <div id="selected-user" style="color:#FFD700;font-size:13px;margin-top:5px;"></div>
+</div>
     <div class="form-group">
       <label>الحد الأقصى للغرف</label>
       <input type="number" id="owner-max-rooms" placeholder="100" value="100" />
@@ -330,26 +331,51 @@ async function createOwner() {
     localStorage.clear();
     window.location.href = '/';
   }
+let allUsers = [];
 
-  async function loadUsersDropdown() {
-    const res = await fetch('/api/users/all', { headers: { authorization: token } });
-    const data = await res.json();
-    if (!data.success) return;
-    const select = document.getElementById('owner-user-id');
-    data.users.forEach(u => {
-      const option = document.createElement('option');
-      option.value = u.id;
-      option.textContent = u.username + ' (' + u.email + ')';
-      select.appendChild(option);
-    });
+async function loadUsersDropdown() {
+  const res = await fetch('/api/users/all', { headers: { authorization: token } });
+  const data = await res.json();
+  if (!data.success) return;
+  allUsers = data.users;
+}
+
+function searchUsers() {
+  const query = document.getElementById('owner-search').value.toLowerCase();
+  const resultsDiv = document.getElementById('search-results');
+  if (query.length < 1) {
+    resultsDiv.style.display = 'none';
+    return;
   }
+  const filtered = allUsers.filter(u =>
+    u.username.toLowerCase().includes(query) ||
+    u.email.toLowerCase().includes(query) ||
+    u.id.toString().includes(query)
+  );
+  if (filtered.length === 0) {
+    resultsDiv.innerHTML = '<div style="padding:10px;color:#888">لا نتائج</div>';
+    resultsDiv.style.display = 'block';
+    return;
+  }
+  resultsDiv.innerHTML = filtered.map(u => `
+    <div onclick="selectUser(${u.id}, '${u.username}')" 
+         style="padding:10px;cursor:pointer;border-bottom:1px solid #1a1a2e;font-size:13px;"
+         onmouseover="this.style.background='#1a1a2e'" 
+         onmouseout="this.style.background='transparent'">
+      <b>${u.username}</b> <span style="color:#888">${u.email}</span>
+      <span style="color:#555;float:left">ID: ${u.id}</span>
+    </div>
+  `).join('');
+  resultsDiv.style.display = 'block';
+}
 
+function selectUser(id, username) {
+  document.getElementById('owner-user-id').value = id;
+  document.getElementById('owner-search').value = username;
+  document.getElementById('search-results').style.display = 'none';
+  document.getElementById('selected-user').textContent = 'تم اختيار: ' + username + ' (ID: ' + id + ')';
+}
   loadStats();
-  loadUsersDropdown();
-</script>
-</body>
-</html>
-
   loadUsersDropdown();
 </script>
 </body>
