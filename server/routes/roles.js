@@ -98,4 +98,27 @@ router.post('/create', verifyToken, async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
+router.post('/update', verifyToken, async (req, res) => {
+  const { id, name, name_color, badge_color, permissions } = req.body;
+  try {
+    const [myRole] = await db.query(
+      `SELECT global_roles.level FROM user_global_roles 
+       JOIN global_roles ON user_global_roles.role_id = global_roles.id 
+       WHERE user_global_roles.user_id = ? 
+       ORDER BY global_roles.level DESC LIMIT 1`,
+      [req.user.id]
+    );
+    if (myRole.length === 0 || myRole[0].level < 1000) {
+      return res.status(403).json({ success: false, message: 'Super Owner only' });
+    }
+    await db.query(
+      'UPDATE global_roles SET name = ?, name_color = ?, badge_color = ?, permissions = ? WHERE id = ?',
+      [name, name_color, badge_color, JSON.stringify(permissions), id]
+    );
+    res.json({ success: true, message: 'Role updated' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
 module.exports = router;

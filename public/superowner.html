@@ -31,12 +31,11 @@
     th { padding: 10px; text-align: right; color: #888; font-size: 13px; border-bottom: 1px solid #1a1a2e; }
     td { padding: 12px 10px; font-size: 13px; border-bottom: 1px solid #0a0a0f; }
     tr:hover td { background: #1a1a2e; }
-    .badge { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
     .form-group { margin-bottom: 15px; }
     .form-group label { display: block; margin-bottom: 7px; color: #aaa; font-size: 13px; }
     .form-group input, .form-group select { width: 100%; padding: 10px; background: #0a0a0f; border: 1px solid #1a1a2e; border-radius: 8px; color: white; font-size: 14px; outline: none; }
-    .form-group input:focus, .form-group select:focus { border-color: #FFD700; }
+    .form-group input:focus { border-color: #FFD700; }
     .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold; transition: 0.2s; }
     .btn-gold { background: #FFD700; color: #0a0a0f; }
     .btn-gold:hover { background: #FFC200; }
@@ -46,6 +45,10 @@
     .alert { padding: 12px 15px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; display: none; }
     .alert-success { background: #1a3a2a; color: #4caf82; border: 1px solid #4caf82; }
     .alert-error { background: #3a1a1a; color: #e94560; border: 1px solid #e94560; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; }
+    .modal.show { display: flex; }
+    .modal-box { background: #0d0d1a; border: 1px solid #FFD700; border-radius: 12px; padding: 30px; width: 520px; max-height: 80vh; overflow-y: auto; }
+    .modal-box h3 { color: #FFD700; margin-bottom: 20px; }
   </style>
 </head>
 <body>
@@ -56,55 +59,50 @@
     <p>لوحة التحكم الرئيسية</p>
     <div class="owner-badge">⭐ Super Owner</div>
   </div>
-
   <div class="nav-section">الرئيسية</div>
-  <div class="nav-item active" onclick="showPage('dashboard')"><span class="icon">📊</span> الإحصائيات</div>
-
+  <div class="nav-item active" data-page="dashboard"><span class="icon">📊</span> الإحصائيات</div>
   <div class="nav-section">الإدارة</div>
-  <div class="nav-item" onclick="showPage('owners')"><span class="icon">👑</span> الـ Owners</div>
-  <div class="nav-item" onclick="showPage('users')"><span class="icon">👥</span> المستخدمون</div>
-  <div class="nav-item" onclick="showPage('rooms')"><span class="icon">💬</span> الغرف</div>
-  <div class="nav-item" onclick="showPage('roles')"><span class="icon">🎖️</span> الرتب</div>
-
+  <div class="nav-item" data-page="owners"><span class="icon">👑</span> الـ Owners</div>
+  <div class="nav-item" data-page="users"><span class="icon">👥</span> المستخدمون</div>
+  <div class="nav-item" data-page="rooms"><span class="icon">💬</span> الغرف</div>
+  <div class="nav-item" data-page="roles"><span class="icon">🎖️</span> الرتب</div>
   <div class="nav-section">النظام</div>
-  <div class="nav-item" onclick="logout()"><span class="icon">🚪</span> خروج</div>
+  <div class="nav-item" id="logout-btn"><span class="icon">🚪</span> خروج</div>
 </div>
 
 <div class="main">
 
-  <!-- Dashboard -->
   <div class="page active" id="page-dashboard">
     <div class="page-title">📊 الإحصائيات العامة</div>
     <div class="stats-grid">
-      <div class="stat-card"><div class="number" id="stat-users">0</div><div class="label">إجمالي المستخدمين</div></div>
-      <div class="stat-card"><div class="number" id="stat-rooms">0</div><div class="label">إجمالي الغرف</div></div>
-      <div class="stat-card"><div class="number" id="stat-messages">0</div><div class="label">إجمالي الرسائل</div></div>
-      <div class="stat-card"><div class="number" id="stat-owners">0</div><div class="label">عدد الـ Owners</div></div>
+      <div class="stat-card"><div class="number" id="stat-users">0</div><div class="label">المستخدمون</div></div>
+      <div class="stat-card"><div class="number" id="stat-rooms">0</div><div class="label">الغرف</div></div>
+      <div class="stat-card"><div class="number" id="stat-messages">0</div><div class="label">الرسائل</div></div>
+      <div class="stat-card"><div class="number" id="stat-owners">0</div><div class="label">الـ Owners</div></div>
     </div>
   </div>
 
-  <!-- Owners -->
   <div class="page" id="page-owners">
     <div class="page-title">👑 إدارة الـ Owners</div>
     <div class="card">
-  <div class="card-title">إنشاء Owner جديد</div>
-  <div class="alert alert-success" id="owner-success"></div>
-  <div class="alert alert-error" id="owner-error"></div>
-  <div class="form-grid">
-  <div class="form-group">
-  <label>ابحث عن مستخدم</label>
-  <input type="text" id="owner-search" placeholder="اكتب اسم المستخدم..." onkeyup="searchUsers()" autocomplete="off" />
-  <div id="search-results" style="background:#0a0a0f;border:1px solid #1a1a2e;border-radius:8px;max-height:200px;overflow-y:auto;display:none;margin-top:5px;"></div>
-  <input type="hidden" id="owner-user-id" />
-  <div id="selected-user" style="color:#FFD700;font-size:13px;margin-top:5px;"></div>
-</div>
-    <div class="form-group">
-      <label>الحد الأقصى للغرف</label>
-      <input type="number" id="owner-max-rooms" placeholder="100" value="100" />
+      <div class="card-title">إنشاء Owner جديد</div>
+      <div class="alert alert-success" id="owner-success"></div>
+      <div class="alert alert-error" id="owner-error"></div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>ابحث عن مستخدم</label>
+          <input type="text" id="owner-search" placeholder="اكتب اسم المستخدم أو ID..." autocomplete="off" />
+          <div id="search-results" style="background:#0a0a0f;border:1px solid #1a1a2e;border-radius:8px;max-height:200px;overflow-y:auto;display:none;margin-top:5px;"></div>
+          <input type="hidden" id="owner-user-id" />
+          <div id="selected-user" style="color:#FFD700;font-size:13px;margin-top:5px;"></div>
+        </div>
+        <div class="form-group">
+          <label>الحد الأقصى للغرف</label>
+          <input type="number" id="owner-max-rooms" value="100" />
+        </div>
+      </div>
+      <button class="btn btn-gold" id="create-owner-btn">إنشاء Owner</button>
     </div>
-  </div>
-  <button class="btn btn-gold" onclick="createOwner()">إنشاء Owner</button>
-</div>
     <div class="card">
       <div class="card-title">قائمة الـ Owners</div>
       <table>
@@ -114,7 +112,6 @@
     </div>
   </div>
 
-  <!-- Users -->
   <div class="page" id="page-users">
     <div class="page-title">👥 إدارة المستخدمين</div>
     <div class="card">
@@ -125,7 +122,6 @@
     </div>
   </div>
 
-  <!-- Rooms -->
   <div class="page" id="page-rooms">
     <div class="page-title">💬 إدارة الغرف</div>
     <div class="card">
@@ -136,7 +132,6 @@
     </div>
   </div>
 
-  <!-- Roles -->
   <div class="page" id="page-roles">
     <div class="page-title">🎖️ إدارة الرتب</div>
     <div class="card">
@@ -159,12 +154,12 @@
           <input type="color" id="role-badgecolor" value="#c9a84c" />
         </div>
       </div>
-      <button class="btn btn-gold" onclick="createRole()">إنشاء الرتبة</button>
+      <button class="btn btn-gold" id="create-role-btn">إنشاء الرتبة</button>
     </div>
     <div class="card">
       <div class="card-title">الرتب الحالية</div>
       <table>
-        <thead><tr><th>الاسم</th><th>المستوى</th><th>لون الاسم</th><th>لون الشارة</th></tr></thead>
+        <thead><tr><th>الاسم</th><th>المستوى</th><th>لون الاسم</th><th>لون الشارة</th><th>تعديل</th></tr></thead>
         <tbody id="roles-list"></tbody>
       </table>
     </div>
@@ -172,118 +167,306 @@
 
 </div>
 
+<!-- Modal Edit Role -->
+<div class="modal" id="editRoleModal">
+  <div class="modal-box">
+    <h3>تعديل الرتبة</h3>
+    <input type="hidden" id="edit-role-id" />
+    <div class="form-group">
+      <label>اسم الرتبة</label>
+      <input type="text" id="edit-role-name" />
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>لون الاسم</label>
+        <input type="color" id="edit-role-namecolor" />
+      </div>
+      <div class="form-group">
+        <label>لون الشارة</label>
+        <input type="color" id="edit-role-badgecolor" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>الصلاحيات</label>
+      <div id="permissions-list" style="background:#0a0a0f;border:1px solid #1a1a2e;border-radius:8px;padding:15px;display:grid;grid-template-columns:1fr 1fr;gap:8px;"></div>
+    </div>
+    <div class="form-group">
+      <label>إضافة صلاحية مخصصة</label>
+      <div style="display:flex;gap:10px;">
+        <input type="text" id="custom-permission" placeholder="مثال: manage_vip" style="flex:1" />
+        <button class="btn btn-gold" id="add-custom-perm-btn">إضافة</button>
+      </div>
+      <div id="custom-permissions-list" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:5px;"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button class="btn btn-gold" id="save-role-btn">حفظ</button>
+      <button class="btn" style="background:transparent;border:1px solid #1a1a2e;color:#aaa;" id="close-modal-btn">إلغاء</button>
+    </div>
+  </div>
+</div>
+
 <script>
-  const token = localStorage.getItem('token');
-  if (!token) window.location.href = '/';
+const token = localStorage.getItem('token');
 
-  function showPage(name) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    document.getElementById('page-' + name).classList.add('active');
-    event.currentTarget.classList.add('active');
-    if (name === 'dashboard') loadStats();
-    if (name === 'owners') loadOwners();
-    if (name === 'users') loadUsers();
-    if (name === 'rooms') loadRooms();
-    if (name === 'roles') loadRoles();
-  }
+const ALL_PERMISSIONS = [
+  { code: 'all', label: 'كل الصلاحيات' },
+  { code: 'manage_staff', label: 'إدارة الطاقم' },
+  { code: 'manage_rooms', label: 'إدارة الغرف' },
+  { code: 'ban_users', label: 'حظر المستخدمين' },
+  { code: 'view_logs', label: 'عرض السجلات' },
+  { code: 'monitor', label: 'مراقبة المنصة' },
+  { code: 'manage_points', label: 'إدارة النقاط' },
+  { code: 'manage_store', label: 'إدارة المتجر' },
+  { code: 'create_rooms', label: 'إنشاء غرف' },
+  { code: 'delete_rooms', label: 'حذف غرف' },
+  { code: 'mute_users', label: 'كتم المستخدمين' },
+  { code: 'kick_users', label: 'طرد المستخدمين' },
+  { code: 'manage_roles', label: 'إدارة الرتب' },
+];
 
-  async function loadStats() {
-    const [users, rooms, owners] = await Promise.all([
-      fetch('/api/auth/stats', { headers: { authorization: token } }).then(r => r.json()),
-      fetch('/api/rooms').then(r => r.json()),
-      fetch('/api/owner/allOwners', { headers: { authorization: token } }).then(r => r.json())
-    ]);
-    if (rooms.success) document.getElementById('stat-rooms').textContent = rooms.rooms.length;
-    if (owners.success) document.getElementById('stat-owners').textContent = owners.owners.length;
-  }
+let allUsers = [];
 
-  async function loadOwners() {
-    const res = await fetch('/api/owner/allOwners', { headers: { authorization: token } });
-    const data = await res.json();
-    if (!data.success) return;
-    const tbody = document.getElementById('owners-list');
-    tbody.innerHTML = '';
-    data.owners.forEach(o => {
-      tbody.innerHTML += `<tr>
-        <td>${o.username}</td>
-        <td>${o.email}</td>
-        <td>${o.rooms_count}</td>
-        <td>${o.max_rooms}</td>
-        <td>${new Date(o.created_at).toLocaleDateString('ar')}</td>
-      </tr>`;
+document.addEventListener('DOMContentLoaded', () => {
+  if (!token) { window.location.href = '/'; return; }
+
+  loadStats();
+  loadUsersDropdown();
+
+  document.querySelectorAll('.nav-item[data-page]').forEach(item => {
+    item.addEventListener('click', function() {
+      const name = this.dataset.page;
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById('page-' + name).classList.add('active');
+      this.classList.add('active');
+      if (name === 'dashboard') loadStats();
+      if (name === 'owners') loadOwners();
+      if (name === 'users') loadUsers();
+      if (name === 'rooms') loadRooms();
+      if (name === 'roles') loadRoles();
     });
-  }
+  });
 
-  async function loadUsers() {
-    const res = await fetch('/api/users/all', { headers: { authorization: token } });
-    const data = await res.json();
-    if (!data.success) return;
-    const tbody = document.getElementById('users-list');
-    tbody.innerHTML = '';
-    data.users.forEach(u => {
-      tbody.innerHTML += `<tr>
-        <td>${u.id}</td>
-        <td>${u.username}</td>
-        <td>${u.email}</td>
-        <td><span class="badge" style="background:#1a3a2a;color:#4caf82">${u.status}</span></td>
-        <td>${new Date(u.created_at).toLocaleDateString('ar')}</td>
-        <td><button class="btn btn-red btn-sm" onclick="banUser(${u.id})">حظر</button></td>
-      </tr>`;
-    });
-  }
+  document.getElementById('logout-btn').addEventListener('click', () => {
+    localStorage.clear();
+    window.location.href = '/';
+  });
 
-  async function loadRooms() {
-    const res = await fetch('/api/rooms');
-    const data = await res.json();
-    if (!data.success) return;
-    const tbody = document.getElementById('rooms-list');
-    tbody.innerHTML = '';
-    data.rooms.forEach(r => {
-      tbody.innerHTML += `<tr>
-        <td>${r.id}</td>
-        <td>${r.name}</td>
-        <td>${r.type === 'public' ? 'عامة' : 'خاصة'}</td>
-        <td>${r.member_count}</td>
-        <td style="font-size:11px;color:#555">${r.room_token || 'لا يوجد'}</td>
-      </tr>`;
-    });
-  }
+  document.getElementById('create-owner-btn').addEventListener('click', createOwner);
+  document.getElementById('create-role-btn').addEventListener('click', createRole);
+  document.getElementById('save-role-btn').addEventListener('click', saveRole);
+  document.getElementById('close-modal-btn').addEventListener('click', () => {
+    document.getElementById('editRoleModal').classList.remove('show');
+  });
+  document.getElementById('add-custom-perm-btn').addEventListener('click', addCustomPermission);
 
-  async function loadRoles() {
-    const res = await fetch('/api/roles');
-    const data = await res.json();
-    if (!data.success) return;
-    const tbody = document.getElementById('roles-list');
-    tbody.innerHTML = '';
-    data.roles.forEach(r => {
-      tbody.innerHTML += `<tr>
-        <td style="color:${r.name_color};font-weight:bold">${r.name}</td>
-        <td>${r.level}</td>
-        <td><span style="background:${r.name_color};color:#000;padding:2px 8px;border-radius:4px">${r.name_color}</span></td>
-        <td><span style="background:${r.badge_color};color:#000;padding:2px 8px;border-radius:4px">${r.badge_color}</span></td>
-      </tr>`;
-    });
+  document.getElementById('owner-search').addEventListener('keyup', searchUsers);
+});
+
+async function loadStats() {
+  const [roomsRes, ownersRes, statsRes] = await Promise.all([
+    fetch('/api/rooms').then(r => r.json()),
+    fetch('/api/owner/allOwners', { headers: { authorization: token } }).then(r => r.json()),
+    fetch('/api/auth/stats', { headers: { authorization: token } }).then(r => r.json()),
+  ]);
+  if (roomsRes.success) document.getElementById('stat-rooms').textContent = roomsRes.rooms.length;
+  if (ownersRes.success) document.getElementById('stat-owners').textContent = ownersRes.owners.length;
+  if (statsRes.success) {
+    document.getElementById('stat-users').textContent = statsRes.users;
+    document.getElementById('stat-messages').textContent = statsRes.messages;
   }
+}
+
+async function loadUsersDropdown() {
+  const res = await fetch('/api/users/all', { headers: { authorization: token } });
+  const data = await res.json();
+  if (!data.success) return;
+  allUsers = data.users;
+}
+
+function searchUsers() {
+  const query = document.getElementById('owner-search').value.toLowerCase();
+  const resultsDiv = document.getElementById('search-results');
+  if (query.length < 1) { resultsDiv.style.display = 'none'; return; }
+  const filtered = allUsers.filter(u =>
+    u.username.toLowerCase().includes(query) ||
+    u.email.toLowerCase().includes(query) ||
+    u.id.toString().includes(query)
+  );
+  if (filtered.length === 0) {
+    resultsDiv.innerHTML = '<div style="padding:10px;color:#888">لا نتائج</div>';
+    resultsDiv.style.display = 'block';
+    return;
+  }
+  resultsDiv.innerHTML = filtered.map(u => `
+    <div data-id="${u.id}" data-name="${u.username}"
+         style="padding:10px;cursor:pointer;border-bottom:1px solid #1a1a2e;font-size:13px;">
+      <b>${u.username}</b> <span style="color:#888">${u.email}</span>
+      <span style="color:#555;float:left">ID: ${u.id}</span>
+    </div>
+  `).join('');
+  resultsDiv.querySelectorAll('div').forEach(div => {
+    div.addEventListener('click', () => {
+      document.getElementById('owner-user-id').value = div.dataset.id;
+      document.getElementById('owner-search').value = div.dataset.name;
+      document.getElementById('search-results').style.display = 'none';
+      document.getElementById('selected-user').textContent = 'تم اختيار: ' + div.dataset.name + ' (ID: ' + div.dataset.id + ')';
+    });
+    div.addEventListener('mouseover', () => div.style.background = '#1a1a2e');
+    div.addEventListener('mouseout', () => div.style.background = 'transparent');
+  });
+  resultsDiv.style.display = 'block';
+}
+
+async function loadOwners() {
+  const res = await fetch('/api/owner/allOwners', { headers: { authorization: token } });
+  const data = await res.json();
+  if (!data.success) return;
+  const tbody = document.getElementById('owners-list');
+  tbody.innerHTML = '';
+  data.owners.forEach(o => {
+    tbody.innerHTML += `<tr>
+      <td>${o.username}</td><td>${o.email}</td>
+      <td>${o.rooms_count}</td><td>${o.max_rooms}</td>
+      <td>${new Date(o.created_at).toLocaleDateString('ar')}</td>
+    </tr>`;
+  });
+}
+
+async function loadUsers() {
+  const res = await fetch('/api/users/all', { headers: { authorization: token } });
+  const data = await res.json();
+  if (!data.success) return;
+  const tbody = document.getElementById('users-list');
+  tbody.innerHTML = '';
+  data.users.forEach(u => {
+    tbody.innerHTML += `<tr>
+      <td>${u.id}</td><td>${u.username}</td><td>${u.email}</td>
+      <td><span style="background:#1a3a2a;color:#4caf82;padding:2px 8px;border-radius:10px;font-size:11px">${u.status}</span></td>
+      <td>${new Date(u.created_at).toLocaleDateString('ar')}</td>
+      <td><button class="btn btn-red btn-sm" data-uid="${u.id}">حظر</button></td>
+    </tr>`;
+  });
+  tbody.querySelectorAll('.btn-red').forEach(btn => {
+    btn.addEventListener('click', () => banUser(btn.dataset.uid));
+  });
+}
+
+async function loadRooms() {
+  const res = await fetch('/api/rooms');
+  const data = await res.json();
+  if (!data.success) return;
+  const tbody = document.getElementById('rooms-list');
+  tbody.innerHTML = '';
+  data.rooms.forEach(r => {
+    tbody.innerHTML += `<tr>
+      <td>${r.id}</td><td>${r.name}</td>
+      <td>${r.type === 'public' ? 'عامة' : 'خاصة'}</td>
+      <td>${r.member_count}</td>
+      <td style="font-size:11px;color:#555">${r.room_token || 'لا يوجد'}</td>
+    </tr>`;
+  });
+}
+
+async function loadRoles() {
+  const res = await fetch('/api/roles');
+  const data = await res.json();
+  if (!data.success) return;
+  const tbody = document.getElementById('roles-list');
+  tbody.innerHTML = '';
+  data.roles.forEach(r => {
+    let perms = [];
+    try { perms = JSON.parse(r.permissions || '[]'); } catch(e) { perms = []; }
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-gold btn-sm';
+    btn.textContent = 'تعديل';
+    btn.addEventListener('click', () => openEditModal(r));
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="color:${r.name_color};font-weight:bold">${r.name}</td>
+      <td>${r.level}</td>
+      <td><span style="background:${r.name_color};color:#000;padding:2px 8px;border-radius:4px">${r.name_color}</span></td>
+      <td><span style="background:${r.badge_color};color:#000;padding:2px 8px;border-radius:4px">${r.badge_color}</span></td>
+      <td></td>
+    `;
+    tr.querySelector('td:last-child').appendChild(btn);
+    tbody.appendChild(tr);
+  });
+}
+
+function openEditModal(role) {
+  let perms = [];
+  try { perms = JSON.parse(role.permissions || '[]'); } catch(e) { perms = []; }
+
+  document.getElementById('edit-role-id').value = role.id;
+  document.getElementById('edit-role-name').value = role.name;
+  document.getElementById('edit-role-namecolor').value = role.name_color;
+  document.getElementById('edit-role-badgecolor').value = role.badge_color;
+
+  const permsList = document.getElementById('permissions-list');
+  permsList.innerHTML = ALL_PERMISSIONS.map(p => `
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:#aaa;font-size:13px;">
+      <input type="checkbox" value="${p.code}" ${perms.includes(p.code) ? 'checked' : ''}
+             style="accent-color:#FFD700;width:16px;height:16px;" />
+      ${p.label}
+    </label>
+  `).join('');
+
+  const customPerms = perms.filter(p => !ALL_PERMISSIONS.find(ap => ap.code === p));
+  document.getElementById('custom-permissions-list').innerHTML = '';
+  customPerms.forEach(p => addCustomTag(p));
+
+  document.getElementById('editRoleModal').classList.add('show');
+}
+
+function addCustomPermission() {
+  const input = document.getElementById('custom-permission');
+  const val = input.value.trim().toLowerCase().replace(/\s/g, '_');
+  if (!val) return;
+  addCustomTag(val);
+  input.value = '';
+}
+
+function addCustomTag(perm) {
+  const div = document.createElement('div');
+  div.style.cssText = 'background:#1a1a2e;color:#FFD700;padding:4px 10px;border-radius:20px;font-size:12px;display:flex;align-items:center;gap:5px;';
+  div.dataset.perm = perm;
+  div.innerHTML = `${perm} <span style="cursor:pointer;color:#e94560;">✕</span>`;
+  div.querySelector('span').addEventListener('click', () => div.remove());
+  document.getElementById('custom-permissions-list').appendChild(div);
+}
+
+async function saveRole() {
+  const id = document.getElementById('edit-role-id').value;
+  const name = document.getElementById('edit-role-name').value;
+  const name_color = document.getElementById('edit-role-namecolor').value;
+  const badge_color = document.getElementById('edit-role-badgecolor').value;
+  const checked = [...document.querySelectorAll('#permissions-list input:checked')].map(i => i.value);
+  const custom = [...document.querySelectorAll('#custom-permissions-list div')].map(d => d.dataset.perm);
+  const permissions = [...checked, ...custom];
+
+  const res = await fetch('/api/roles/update', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', authorization: token },
+    body: JSON.stringify({ id, name, name_color, badge_color, permissions })
+  });
+  const data = await res.json();
+  if (data.success) {
+    document.getElementById('editRoleModal').classList.remove('show');
+    loadRoles();
+  }
+}
 
 async function createOwner() {
   const user_id = document.getElementById('owner-user-id').value;
   const max_rooms = document.getElementById('owner-max-rooms').value;
-  
-  console.log('Token:', token);
-  console.log('User ID:', user_id);
-  
+  if (!user_id) { alert('اختر مستخدماً أولاً'); return; }
   const res = await fetch('/api/owner/create', {
     method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json', 
-      'authorization': token 
-    },
+    headers: { 'Content-Type': 'application/json', authorization: token },
     body: JSON.stringify({ user_id: parseInt(user_id), max_rooms: parseInt(max_rooms) })
   });
   const data = await res.json();
-  console.log('Response:', data);
-  
   const successEl = document.getElementById('owner-success');
   const errorEl = document.getElementById('owner-error');
   if (data.success) {
@@ -298,85 +481,29 @@ async function createOwner() {
   }
 }
 
-  async function createRole() {
-    const name = document.getElementById('role-name').value;
-    const level = document.getElementById('role-level').value;
-    const name_color = document.getElementById('role-namecolor').value;
-    const badge_color = document.getElementById('role-badgecolor').value;
-    const res = await fetch('/api/roles/create', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', authorization: token },
-      body: JSON.stringify({ name, level: parseInt(level), name_color, badge_color })
-    });
-    const data = await res.json();
-    if (data.success) loadRoles();
-  }
-
-  async function banUser(user_id) {
-    if (!confirm('هل تريد حظر هذا المستخدم؟')) return;
-    await fetch('/api/users/ban', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', authorization: token },
-      body: JSON.stringify({ user_id })
-    });
-    loadUsers();
-  }
-
-  function logout() {
-    localStorage.clear();
-    window.location.href = '/';
-  }
-
-  loadStats();function logout() {
-    localStorage.clear();
-    window.location.href = '/';
-  }
-let allUsers = [];
-
-async function loadUsersDropdown() {
-  const res = await fetch('/api/users/all', { headers: { authorization: token } });
+async function createRole() {
+  const name = document.getElementById('role-name').value;
+  const level = document.getElementById('role-level').value;
+  const name_color = document.getElementById('role-namecolor').value;
+  const badge_color = document.getElementById('role-badgecolor').value;
+  const res = await fetch('/api/roles/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', authorization: token },
+    body: JSON.stringify({ name, level: parseInt(level), name_color, badge_color })
+  });
   const data = await res.json();
-  if (!data.success) return;
-  allUsers = data.users;
+  if (data.success) loadRoles();
 }
 
-function searchUsers() {
-  const query = document.getElementById('owner-search').value.toLowerCase();
-  const resultsDiv = document.getElementById('search-results');
-  if (query.length < 1) {
-    resultsDiv.style.display = 'none';
-    return;
-  }
-  const filtered = allUsers.filter(u =>
-    u.username.toLowerCase().includes(query) ||
-    u.email.toLowerCase().includes(query) ||
-    u.id.toString().includes(query)
-  );
-  if (filtered.length === 0) {
-    resultsDiv.innerHTML = '<div style="padding:10px;color:#888">لا نتائج</div>';
-    resultsDiv.style.display = 'block';
-    return;
-  }
-  resultsDiv.innerHTML = filtered.map(u => `
-    <div onclick="selectUser(${u.id}, '${u.username}')" 
-         style="padding:10px;cursor:pointer;border-bottom:1px solid #1a1a2e;font-size:13px;"
-         onmouseover="this.style.background='#1a1a2e'" 
-         onmouseout="this.style.background='transparent'">
-      <b>${u.username}</b> <span style="color:#888">${u.email}</span>
-      <span style="color:#555;float:left">ID: ${u.id}</span>
-    </div>
-  `).join('');
-  resultsDiv.style.display = 'block';
+async function banUser(user_id) {
+  if (!confirm('هل تريد حظر هذا المستخدم؟')) return;
+  await fetch('/api/users/ban', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', authorization: token },
+    body: JSON.stringify({ user_id })
+  });
+  loadUsers();
 }
-
-function selectUser(id, username) {
-  document.getElementById('owner-user-id').value = id;
-  document.getElementById('owner-search').value = username;
-  document.getElementById('search-results').style.display = 'none';
-  document.getElementById('selected-user').textContent = 'تم اختيار: ' + username + ' (ID: ' + id + ')';
-}
-  loadStats();
-  loadUsersDropdown();
 </script>
 </body>
 </html>
