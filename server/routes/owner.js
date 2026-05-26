@@ -92,8 +92,7 @@ router.get('/myRooms', verifyToken, async (req, res) => {
   }
 });
 
-router.get('/allOwners', verifyToken, isSuperOwner, async (req, res) => {
-  try {
+router.get('/allOwners', verifyToken, async (req, res) => {  try {
     const [owners] = await db.query(
       `SELECT owners.*, users.username, users.email 
        FROM owners 
