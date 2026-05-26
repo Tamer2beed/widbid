@@ -5,7 +5,7 @@ const { verifyToken } = require('../middleware');
 const crypto = require('crypto');
 
 const generateToken = () => crypto.randomBytes(32).toString('hex');
-
+const generateOwnerToken = () => crypto.randomBytes(3).toString('hex').toUpperCase();
 const isSuperOwner = async (req, res, next) => {
   try {
     const [rows] = await db.query(
@@ -64,10 +64,14 @@ router.post('/createRoom', verifyToken, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Room limit reached' });
     }
     const token = generateToken();
-    const [result] = await db.query(
-      'INSERT INTO rooms (name, type, owner_id, owner_id_global, room_token, max_members) VALUES (?, ?, ?, ?, ?, ?)',
-      [name, type || 'public', req.user.id, owner.id, token, max_members || 100]
-    );
+    const [ownerInfo] = await db.query('SELECT owner_token, rooms_count FROM owners WHERE user_id = ?', [req.user.id]);
+const ownerToken = ownerInfo[0].owner_token;
+const roomNumber = ownerInfo[0].rooms_count + 1;
+const shortToken = ownerToken + '-' + roomNumber;
+const [result] = await db.query(
+  'INSERT INTO rooms (name, type, owner_id, owner_id_global, room_token, max_members, room_number) VALUES (?, ?, ?, ?, ?, ?, ?)',
+  [name, type || 'public', req.user.id, owner.id, shortToken, max_members || 100, roomNumber]
+);
     await db.query('UPDATE owners SET rooms_count = rooms_count + 1 WHERE user_id = ?', [req.user.id]);
     res.json({ success: true, room_id: result.insertId, token, link: '/room/' + token });
   } catch (err) {
