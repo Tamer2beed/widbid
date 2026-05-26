@@ -4,6 +4,7 @@ const db = require('../db');
 const { verifyToken } = require('../middleware');
 
 router.get('/', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
   try {
     const [roles] = await db.query('SELECT * FROM global_roles ORDER BY level DESC');
     res.json({ success: true, roles });

@@ -1,0 +1,225 @@
+# 👑 وثيقة التصميم البرمجي لنظام الرتب والإدارة العليا (ALL2CHAT / WEVO)
+**اسم الملف:** `system_design.md`  
+**إصدار النظام:** v3.0 (محدث بنظام الهيمنة الصارم والحصص القيادية)
+
+---
+
+## 📋 1. مصفوفة الصلاحيات والهرم الإداري (Role Architecture)
+
+يحتوي النظام على 10 مستويات رقمية متسلسلة تصاعدياً. يمنع النظام برمجياً أي مسؤول من اتخاذ أي إجراء عقابي أو تعديلي على مسؤول يمتلك رتبة مساوية له أو أعلى منه لحماية استقرار الخادم.
+
+
+| المعرف الرقمي (`level`) | اسم الرتبة في النظام | نوع الحساب والامتيازات | صلاحية الهيمنة والعزل |
+| :---: | :--- | :--- | :--- |
+| **1** | `GUEST` | زائر عادي مؤقت | لا يوجد (صلاحيات القراءة والكتابة العامة فقط). |
+| **2** | `PROTECTED_NAME` | اسم محمي بكلمة مرور وصورة شخصية | حصانة برمجية ضد انتحال الاسم أو سرقته. |
+| **3** | `ROYAL_NAME` | اسم ملكي (شرفي متميز ملون) | حصانة ضد قرارات طرد المشرفين العاديين. |
+| **4** | `MODERATOR` | مشرف الغرفة (طاقم الرقابة) | طرد الزوار والأسماء المحمية المخالفة. |
+| **5** | `ROOM_MASTER` | ماستر ومسؤول الغرفة المحدد | طرد وحظر الحسابات (ID Ban) ضمن غرفته. |
+| **6** | `SUPER_MASTER` | سوبر ماستر (مشرف الغرف) | تعيين وعزل المشرفين (Level 4) فما دون. |
+| **7** | `RESELLER` | موزع غرف وأسماء (لوحات فرعية) | حجز الغرف وتوليد العضويات الشرفية والملكية. |
+| **8** | `ROOT` | الروت (مدير السيرفر الفرعي) | حظر أجهزة (`IP Ban`) وتغيير مظهر الغرف الكلية. |
+| **9** | `OWNER` | الأونر (المشرف العام الشامل) | كسر حصانة الروت (Level 8) ومعاقبته وعزله. |
+| **10** | `SUPER_OWNER` | السوبر أونر (مالك النظام المطلق) | توليد الأونر، وتحديد حصص الغرف والروت (الكوتا). |
+
+---
+
+## ⚙️ 2. برمجيات التحقق والأمان (Core Middleware)
+
+هذه الدالة هي صمام أمان النظام في السيرفر؛ حيث تفحص أولاً الحد الأدنى لتنفيذ الأمر، ثم تفحص الهيمنة المطلقة لمنع تصفية الحسابات بين الرتب المتساوية.
+
+```javascript
+// مصفوفة مستويات الصلاحية النهائية المدمجة للنظام بالكامل
+const USER_LEVELS = {
+    GUEST: 1,
+    PROTECTED_NAME: 2,
+    ROYAL_NAME: 3,
+    MODERATOR: 4,
+    ROOM_MASTER: 5,
+    SUPER_MASTER: 6,
+    RESELLER: 7,
+    ROOT: 8,
+    OWNER: 9,
+    SUPER_OWNER: 10
+};
+
+/**
+ * دالة التحقق الآمنة قبل تنفيذ أي أمر إداري أو عقابي
+ * @param {Object} executor - كائن المسؤول المنفذ للأمر
+ * @param {Object} targetUser - كائن المستخدم المستهدف (الضحية)
+ * @param {Number} requiredLevel - الحد الأدنى المطلوب لتشغيل الأمر
+ * @returns {Boolean} - مسموح بالتنفيذ أم لا
+ */
+function verifyAction(executor, targetUser, requiredLevel) {
+    // 1. التحقق من صلاحية الإجراء: هل يمتلك المسؤول الحد الأدنى لتشغيل الأمر؟
+    if (executor.level < requiredLevel) {
+        return false; // مرفوض: رتبة المنفذ غير كافية لتشغيل الأمر
+    }
+
+    // 2. فحص الهيمنة والحصانة: هل رتبة المشرف أعلى قطعياً من رتبة المستهدف؟
+    // يمنع معاقبة الرتب المساوية والرتب العليا نهائياً
+    if (executor.level <= targetUser.level) {
+        return false; // مرفوض: لا يمكنك معاقبة رتبة مساوية لك أو أعلى منك
+    }
+
+    return true; // مسموح بالتنفيذ بأمان كامل
+}
+```
+
+---
+
+## 🛠️ 3. الأكواد التنفيذية للسيرفر (REST APIs & Socket.io)
+
+### 🥾 أ. أمر الطرد المؤقت (Kick Command)
+* **الصلاحية المطلوبة:** `MODERATOR` (المستوى 4) فما فوق.
+* **المنطق:** يفصل اتصال المستخدم بالاتفاق مع دالة الحصانة وبث الحدث في الشات العام.
+
+```javascript
+app.post('/api/chat/kick', (req, res) => {
+    const executor = req.user; 
+    const { targetUserId, reason } = req.body;
+
+    const targetUserSocket = io.sockets.sockets.get(targetUserId);
+    if (!targetUserSocket) return res.status(404).send("المستخدم غير متصل حالياً.");
+    
+    const targetUser = targetUserSocket.user_data; 
+
+    // تطبيق فحص الصلاحية والهيمنة المحدث
+    if (!verifyAction(executor, targetUser, USER_LEVELS.MODERATOR)) {
+        return res.status(403).send("⛔ حجب النظام: رتبتك غير كافية، أو رتبة الهدف مساوية لك أو أعلى منك!");
+    }
+
+    // تنفيذ الطرد
+    targetUserSocket.emit('kicked', { message: `تم طردك من الغرفة. السبب: ${reason || "غير محدد"}` });
+    targetUserSocket.disconnect(true);
+
+    io.emit('chatMessage', { user: "النظام", text: `قام [${executor.username}] بطرد [${targetUser.username}]` });
+    res.send("تم الطرد بنجاح");
+});
+```
+
+### 🚫 ب. أمر حظر الجهاز والشبكة (IP / Hardware Ban)
+* **الصلاحية المطلوبة:** `ROOT` (المستوى 8) فما فوق.
+* **المنطق:** يسحب الـ IP الحقيقي ويسجله في القائمة السوداء، مع إمكانية استخدام الأونر للأمر لمعاقبة الروت نفسه.
+
+```javascript
+app.post('/api/admin/ban-ip', async (req, res) => {
+    const executor = req.user;
+    const { targetUserId } = req.body;
+
+    const targetUserSocket = io.sockets.sockets.get(targetUserId);
+    if (!targetUserSocket) return res.status(404).send("المستخدم غير متصل.");
+
+    const targetUser = targetUserSocket.user_data;
+
+    // فحص الصلاحية: الحد الأدنى هو رتبة روت (8) مع حماية الروت من زملائه
+    if (!verifyAction(executor, targetUser, USER_LEVELS.ROOT)) {
+        return res.status(403).send("⛔ خطأ: صلاحية حظر الـ IP تطلب رتبة روت كحد أدنى، ولا يمكنك معاقبة رتبتك أو أعلى.");
+    }
+
+    const clientIp = targetUserSocket.handshake.address;
+
+    // إدراج البيانات بقاعدة البيانات
+    await db.query("INSERT INTO ip_blacklist (ip_address, banned_by) VALUES (?, ?)", [clientIp, executor.username]);
+    
+    targetUserSocket.emit('forced_disconnect', { message: "تم حظر جهازك وشبكتك من السيرفر بالكامل." });
+    targetUserSocket.disconnect(true);
+
+    res.send("تم تنفيذ حظر الشبكة والجهاز بنجاح.");
+});
+```
+
+### 🎙️ ج. أمر كتم وتشغيل المايك (Toggle Mic Command)
+* **الصلاحية المطلوبة:** `ROOM_MASTER` (المستوى 5) فما فوق.
+
+```javascript
+app.post('/api/chat/toggle-mic', (req, res) => {
+    const executor = req.user;
+    const { targetUserId, allowMic } = req.body; 
+
+    const targetUserSocket = io.sockets.sockets.get(targetUserId);
+    if (!targetUserSocket) return res.status(404).send("المستخدم غير متصل.");
+
+    const targetUser = targetUserSocket.user_data;
+
+    if (!verifyAction(executor, targetUser, USER_LEVELS.ROOM_MASTER)) {
+        return res.status(403).send("⛔ حجب: لا تملك الصلاحية، أو رتبة المستخدم المستهدف مساوية أو أعلى منك.");
+    }
+
+    targetUserSocket.emit('micStatusChanged', { canTalk: allowMic });
+    res.send("تم تحديث حالة المايك بنجاح.");
+});
+```
+
+---
+
+## 👑 4. لوحات التحكم الإدارية العليا وحصص التوزيع (Quota System)
+
+### 🧬 أ. لوحة السوبر أونر (تولد الأونر وتقييد الصلاحيات)
+* **الصلاحية المطلوبة:** `SUPER_OWNER` (المستوى 10 حصرياً).
+
+```javascript
+app.post('/api/super-owner/generate-owner', async (req, res) => {
+    const executor = req.user;
+
+    if (executor.level !== USER_LEVELS.SUPER_OWNER) {
+        return res.status(403).send("⚠️ اختراق أمني: هذا الإجراء مخصص حصرياً لمالك النظام (السوبر أونر)!");
+    }
+
+    const { ownerName, password, allowedRooms, allowedRoots } = req.body;
+
+    try {
+        // إنشاء حساب الأونر بمستوى 9
+        const [userResult] = await db.query(
+            "INSERT INTO users (username, password, level) VALUES (?, ?, ?)", 
+            [ownerName, password, USER_LEVELS.OWNER]
+        );
+        
+        // ربطه بجدول الحصص والقيود المحددة
+        await db.query(
+            "INSERT INTO owner_quotas (owner_id, max_rooms, max_roots, current_rooms, current_roots) VALUES (?, ?, ?, 0, 0)",
+            [userResult.insertId, allowedRooms, allowedRoots]
+        );
+
+        res.status(201).send({ status: "success", message: `تم توليد الأونر (${ownerName}) وتقييد حصته بنجاح.` });
+    } catch (err) {
+        res.status(500).send("خطأ في السيرفر: " + err.message);
+    }
+});
+```
+
+### 💼 ب. لوحة الأونر (توليد الروت وفحص الكوتا المستهلكة)
+* **الصلاحية المطلوبة:** `OWNER` (المستوى 9) فما فوق.
+
+```javascript
+app.post('/api/owner/issue-root', async (req, res) => {
+    const executor = req.user; 
+    const { targetUsernameForRoot } = req.body;
+
+    if (executor.level < USER_LEVELS.OWNER) {
+        return res.status(403).send("خطأ: توليد حسابات الروت يتطلب رتبة أونر أو سوبر أونر.");
+    }
+
+    // إذا كان المنفذ أونر عادي، نتحقق من الكوتا المخصصة له من السوبر أونر
+    if (executor.level === USER_LEVELS.OWNER) {
+        const [quota] = await db.query("SELECT * FROM owner_quotas WHERE owner_id = ?", [executor.id]);
+        
+        if (!quota || quota.current_roots >= quota.max_roots) {
+            return res.status(400).send(`❌ فشل الإجراء: لقد استهلكت كامل حصتك المتاحة لتوليد الروت وهي (${quota.max_roots}) روت.`);
+        }
+    }
+
+    // ترقية الحساب المستهدف إلى رتبة روت (8)
+    await db.query("UPDATE users SET level = ? WHERE username = ?", [USER_LEVELS.ROOT, targetUsernameForRoot]);
+    
+    // تحديث عداد الاستهلاك الخاص بالأونر
+    if (executor.level === USER_LEVELS.OWNER) {
+        await db.query("UPDATE owner_quotas SET current_roots = current_roots + 1 WHERE owner_id = ?", [executor.id]);
+    }
+
+    res.send(`✅ تم توليد وتخصيص الروت الجديد (${targetUsernameForRoot}) بنجاح.`);
+});
+```
+
+---
+*نهاية وثيقة التصميم - تم تدوين النظام البرمجي بنجاح وبنية تحتية محمية ضد الثغرات الإدارية.*

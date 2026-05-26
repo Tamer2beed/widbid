@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم العليا | WEVO & All2Chat</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --panel-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-purple: #8b5cf6;
+            --accent-red: #ef4444;
+            --border-color: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+
+        header h1 {
+            color: var(--accent-blue);
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        header p {
+            color: var(--text-muted);
+        }
+
+        /* نظام تقسيم اللوحات */
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .panel-super-owner { border-top: 4px solid var(--accent-purple); }
+        .panel-owner { border-top: 4px solid var(--accent-blue); }
+
+        .panel-title {
+            font-size: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .badge {
+            font-size: 12px;
+            padding: 3px 8px;
+            border-radius: 20px;
+            color: #fff;
+        }
+        .badge-purple { background-color: var(--accent-purple); }
+        .badge-blue { background-color: var(--accent-blue); }
+
+        /* الاستمارات والحقول */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            background-color: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-main);
+            font-size: 14px;
+            transition: border 0.3s;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--accent-blue);
+            outline: none;
+        }
+
+        .quota-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 15px;
+            transition: opacity 0.2s;
+        }
+
+        button:hover { opacity: 0.9; }
+        .btn-purple { background-color: var(--accent-purple); }
+        .btn-blue { background-color: var(--accent-blue); }
+        .btn-red { background-color: var(--accent-red); }
+
+        /* جزء المراقبة الحية وتقارير الكوتا */
+        .full-width-panel {
+            grid-column: 1 / -1;
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 25px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: right;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+        }
+
+        th { background-color: var(--bg-dark); color: var(--text-muted); }
+
+        /* شاشة عرض الإشعارات والنتائج */
+        #log-screen {
+            background-color: #000;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 15px;
+            border-radius: 6px;
+            height: 120px;
+            overflow-y: auto;
+            margin-top: 15px;
+            font-size: 13px;
+            direction: ltr;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>نظام الإدارة المهيمنة الكلية</h1>
+        <p>لوحة التحكم البرمجية الفيدرالية لبرنامج All2Chat / WEVO</p>
+    </header>
+
+    <div class="grid-layout">
+        
+        <!-- لوحة السوبر أونر (المستوى 10) -->
+        <div class="panel panel-super-owner">
+            <div class="panel-title">
+                👑 لوحة السوبر أونر 
+                <span class="badge badge-purple">المستوى 10</span>
+            </div>
+            <form id="superOwnerForm" onsubmit="handleSuperOwner(event)">
+                <div class="form-group">
+                    <label>اسم الأونر (Owner) الجديد المراد توليده:</label>
+                    <input type="text" id="so-owner-name" required placeholder="مثال: Owner_Ahmed">
+                </div>
+                <div class="form-group">
+                    <label>كلمة مرور الحساب:</label>
+                    <input type="password" id="so-owner-pass" required placeholder="••••••••">
+                </div>
+                <div class="quota-row">
+                    <div class="form-group">
+                        <label>الحد الأقصى للغرف (كوتا):</label>
+                        <input type="number" id="so-max-rooms" required value="5" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>الحد الأقصى للروت (كوتا):</label>
+                        <input type="number" id="so-max-roots" required value="3" min="1">
+                    </div>
+                </div>
+                <button type="submit" class="btn-purple">توليد حساب أونر وضبط الحصص</button>
+            </form>
+        </div>
+
+        <!-- لوحة الأونر (المستوى 9) -->
+        <div class="panel panel-owner">
+            <div class="panel-title">
+                🛡️ لوحة التحكم للأونر العام
+                <span class="badge badge-blue">المستوى 9</span>
+            </div>
+            <form id="ownerForm" onsubmit="handleOwner(event)">
+                <div class="form-group">
+                    <label>اسم المستخدم المراد ترقيته إلى روت (Root):</label>
+                    <input type="text" id="o-target-name" required placeholder="مثال: User_VIP">
+                </div>
+                <div class="form-group">
+                    <label>اختر السيرفر أو الغرفة المستهدفة:</label>
+                    <select id="o-target-room">
+                        <option value="room-1">الغرفة العامة الرئيسية</option>
+                        <option value="room-2">غرفة مسابقات WEVO</option>
+                        <option value="room-3">غرفة روت 1 الفرعية</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-blue" style="margin-bottom: 10px;">توليد روت جديد وفحص الكوتا</button>
+                <button type="button" class="btn-red" onclick="triggerMassBan()">إجراء حظر كلي فوري للجهاز والشبكة (IP Ban)</button>
+            </form>
+        </div>
+
+        <!-- لوحة مراقبة السيرفر والكوتا والحصص المتفاعلة -->
+        <div class="full-width-panel">
+            <div class="panel-title">📊 مراقبة استهلاك الحصص (Quota Tracker) الحية في السيرفر</div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>الأونر المسؤول</th>
+                            <th>المستوى الإداري</th>
+                            <th>الغرف المستهلكة / المتاحة</th>
+                            <th>الروت الموزع / المتاح</th>
+                            <th>حالة الحساب</th>
+                        </tr>
+                    </thead>
+                    <tbody id="quota-table-body">
+                        <tr>
+                            <td>Owner_Ahmed</td>
+                            <td>9 (أونر عام)</td>
+                            <td><span style="color:var(--accent-green)">2</span> / 5 غرف</td>
+                            <td><span style="color:var(--accent-green)">1</span> / 3 روت</td>
+                            <td><span style="color:var(--accent-green)">نشط ومقيد</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="panel-title" style="margin-top:20px; font-size: 16px;">🖥️ موجه أوامر النظام (System Console Output)</div>
+            <div id="log-screen">> نظام التحقق والمصفوفة المدمجة جاهز للعمل...</div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // مصفوفة الصلاحيات المحدثة والمدمجة
+    const USER_LEVELS = { GUEST: 1, MODERATOR: 4, ROOT: 8, OWNER: 9, SUPER_OWNER: 10 };
+
+    // محاكاة كائنات المستخدمين لغرض الفحص بالواجهة
+    const currentSuperOwner = { username: "Super_Owner_Main", level: 10 };
+    const currentOwner = { username: "Owner_Ahmed", level: 9, current_roots: 1, max_roots: 3 };
+    const targetUserToBan = { username: "Bad_User", level: 1 }; // زائر يراد حظره من الأونر
+
+    const consoleLog = document.getElementById("log-screen");
+
+    function addLog(text) {

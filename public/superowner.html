@@ -395,8 +395,16 @@ async function loadRoles() {
 }
 
 function openEditModal(role) {
-  let perms = [];
-  try { perms = JSON.parse(role.permissions || '[]'); } catch(e) { perms = []; }
+ let perms = [];
+if (Array.isArray(role.permissions)) {
+  perms = role.permissions;
+} else {
+  try { 
+    perms = JSON.parse(role.permissions || '[]'); 
+  } catch(e) { 
+    perms = []; 
+  }
+}
 
   document.getElementById('edit-role-id').value = role.id;
   document.getElementById('edit-role-name').value = role.name;
@@ -404,7 +412,9 @@ function openEditModal(role) {
   document.getElementById('edit-role-badgecolor').value = role.badge_color;
 
   const permsList = document.getElementById('permissions-list');
-  permsList.innerHTML = ALL_PERMISSIONS.map(p => `
+  permsList.innerHTML = '';
+  
+permsList.innerHTML = ALL_PERMISSIONS.map(p => `
     <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:#aaa;font-size:13px;">
       <input type="checkbox" value="${p.code}" ${perms.includes(p.code) ? 'checked' : ''}
              style="accent-color:#FFD700;width:16px;height:16px;" />
@@ -416,7 +426,12 @@ function openEditModal(role) {
   document.getElementById('custom-permissions-list').innerHTML = '';
   customPerms.forEach(p => addCustomTag(p));
 
-  document.getElementById('editRoleModal').classList.add('show');
+document.getElementById('editRoleModal').classList.add('show');
+setTimeout(() => {
+  document.querySelectorAll('#permissions-list input').forEach(cb => {
+    cb.checked = perms.includes(cb.value);
+  });
+}, 50);
 }
 
 function addCustomPermission() {
