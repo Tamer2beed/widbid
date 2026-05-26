@@ -65,4 +65,18 @@ router.post('/kick', verifyToken, isRoomAdmin, async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
+router.get('/members/:room_id', verifyToken, async (req, res) => {
+  try {
+    const [members] = await db.query(
+      `SELECT room_members.*, users.username 
+       FROM room_members 
+       JOIN users ON room_members.user_id = users.id 
+       WHERE room_members.room_id = ?`,
+      [req.params.room_id]
+    );
+    res.json({ success: true, members });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
 module.exports = router;

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WidBid - Owner Panel</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial; background: #0a0a0f; color: white; display: flex; min-height: 100vh; }
+    .sidebar { width: 240px; background: #0d0d1a; border-left: 1px solid #FF8C00; padding: 20px 0; position: fixed; height: 100vh; overflow-y: auto; }
+    .sidebar-logo { text-align: center; padding: 20px; border-bottom: 1px solid #1a1a2e; }
+    .sidebar-logo h1 { color: #FF8C00; font-size: 22px; letter-spacing: 3px; }
+    .sidebar-logo p { color: #888; font-size: 11px; margin-top: 5px; }
+    .owner-badge { background: linear-gradient(135deg, #FF8C00, #FF4500); color: white; padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; margin-top: 8px; display: inline-block; }
+    .nav-section { padding: 15px 20px 5px; color: #555; font-size: 11px; text-transform: uppercase; }
+    .nav-item { padding: 12px 20px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: #888; transition: 0.2s; font-size: 14px; }
+    .nav-item:hover { background: #1a1a2e; color: #FF8C00; }
+    .nav-item.active { background: #1a1a2e; color: #FF8C00; border-right: 3px solid #FF8C00; }
+    .nav-item .icon { font-size: 18px; }
+    .main { margin-right: 240px; flex: 1; padding: 25px; }
+    .page { display: none; }
+    .page.active { display: block; }
+    .page-title { font-size: 22px; color: #FF8C00; margin-bottom: 25px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; margin-bottom: 30px; }
+    .stat-card { background: #0d0d1a; border: 1px solid #1a1a2e; border-radius: 12px; padding: 20px; text-align: center; }
+    .stat-card .number { font-size: 36px; font-weight: bold; color: #FF8C00; }
+    .stat-card .label { color: #888; font-size: 13px; margin-top: 5px; }
+    .card { background: #0d0d1a; border: 1px solid #1a1a2e; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+    .card-title { color: #FF8C00; font-size: 16px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #1a1a2e; }
+    table { width: 100%; border-collapse: collapse; }
+    th { padding: 10px; text-align: right; color: #888; font-size: 13px; border-bottom: 1px solid #1a1a2e; }
+    td { padding: 12px 10px; font-size: 13px; border-bottom: 1px solid #0a0a0f; }
+    tr:hover td { background: #1a1a2e; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 7px; color: #aaa; font-size: 13px; }
+    .form-group input, .form-group select { width: 100%; padding: 10px; background: #0a0a0f; border: 1px solid #1a1a2e; border-radius: 8px; color: white; font-size: 14px; outline: none; }
+    .form-group input:focus { border-color: #FF8C00; }
+    .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold; transition: 0.2s; }
+    .btn-orange { background: #FF8C00; color: white; }
+    .btn-orange:hover { background: #FF7000; }
+    .btn-red { background: #E74C3C; color: white; }
+    .btn-red:hover { background: #C0392B; }
+    .btn-sm { padding: 5px 12px; font-size: 12px; }
+    .alert { padding: 12px 15px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; display: none; }
+    .alert-success { background: #1a3a2a; color: #4caf82; border: 1px solid #4caf82; }
+    .alert-error { background: #3a1a1a; color: #e94560; border: 1px solid #e94560; }
+    .token-box { background: #0a0a0f; border: 1px solid #1a1a2e; border-radius: 8px; padding: 10px; font-size: 12px; color: #555; word-break: break-all; margin-top: 5px; }
+    .copy-btn { padding: 3px 10px; background: #1a1a2e; color: #FF8C00; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; margin-top: 5px; }
+  </style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <h1>WidBid</h1>
+    <p>لوحة تحكم المالك</p>
+    <div class="owner-badge">👑 Owner</div>
+  </div>
+  <div class="nav-section">الرئيسية</div>
+  <div class="nav-item active" data-page="dashboard"><span class="icon">📊</span> الإحصائيات</div>
+  <div class="nav-section">الإدارة</div>
+  <div class="nav-item" data-page="rooms"><span class="icon">💬</span> غرفي</div>
+  <div class="nav-item" data-page="create-room"><span class="icon">➕</span> إنشاء غرفة</div>
+  <div class="nav-item" data-page="members"><span class="icon">👥</span> الأعضاء</div>
+  <div class="nav-section">النظام</div>
+  <div class="nav-item" id="logout-btn"><span class="icon">🚪</span> خروج</div>
+</div>
+
+<div class="main">
+
+  <div class="page active" id="page-dashboard">
+    <div class="page-title">📊 إحصائياتي</div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="number" id="stat-rooms">0</div><div class="label">غرفي</div></div>
+      <div class="stat-card"><div class="number" id="stat-max-rooms">0</div><div class="label">الحد الأقصى</div></div>
+      <div class="stat-card"><div class="number" id="stat-members">0</div><div class="label">إجمالي الأعضاء</div></div>
+    </div>
+  </div>
+
+  <div class="page" id="page-rooms">
+    <div class="page-title">💬 غرفي</div>
+    <div class="card">
+      <table>
+        <thead><tr><th>الاسم</th><th>النوع</th><th>الأعضاء</th><th>رابط الدخول</th></tr></thead>
+        <tbody id="rooms-list"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="page" id="page-create-room">
+    <div class="page-title">➕ إنشاء غرفة جديدة</div>
+    <div class="card">
+      <div class="alert alert-success" id="room-success"></div>
+      <div class="alert alert-error" id="room-error"></div>
+      <div class="form-group">
+        <label>اسم الغرفة</label>
+        <input type="text" id="room-name" placeholder="اسم الغرفة" />
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>النوع</label>
+          <select id="room-type">
+            <option value="public">عامة</option>
+            <option value="private">خاصة</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>الحد الأقصى للأعضاء</label>
+          <input type="number" id="room-max-members" value="100" />
+        </div>
+      </div>
+      <button class="btn btn-orange" id="create-room-btn">إنشاء الغرفة</button>
+    </div>
+  </div>
+
+  <div class="page" id="page-members">
+    <div class="page-title">👥 أعضاء غرفي</div>
+    <div class="card">
+      <div class="form-group">
+        <label>اختر الغرفة</label>
+        <select id="room-select" style="margin-bottom:15px"></select>
+      </div>
+      <table>
+        <thead><tr><th>المستخدم</th><th>الدور</th><th>تاريخ الانضمام</th><th>إجراء</th></tr></thead>
+        <tbody id="members-list"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const token = localStorage.getItem('token');
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (!token) { window.location.href = '/'; return; }
+
+  loadDashboard();
+
+  document.querySelectorAll('.nav-item[data-page]').forEach(item => {
+    item.addEventListener('click', function() {
+      const name = this.dataset.page;
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById('page-' + name).classList.add('active');
+      this.classList.add('active');
+      if (name === 'dashboard') loadDashboard();
+      if (name === 'rooms') loadRooms();
+      if (name === 'members') loadRoomsDropdown();
+    });
+  });
+
+  document.getElementById('logout-btn').addEventListener('click', () => {
+    localStorage.clear();
+    window.location.href = '/';
+  });
+
+  document.getElementById('create-room-btn').addEventListener('click', createRoom);
+
+  document.getElementById('room-select').addEventListener('change', function() {
+    loadMembers(this.value);
+  });
+});
+
+async function loadDashboard() {
+  const res = await fetch('/api/owner/myRooms', { headers: { authorization: token } });
+  const data = await res.json();
+  if (!data.success) return;
+  const totalMembers = data.rooms.reduce((sum, r) => sum + (r.member_count || 0), 0);
+  document.getElementById('stat-rooms').textContent = data.rooms.length;
+  document.getElementById('stat-members').textContent = totalMembers;
+
+  const ownerRes = await fetch('/api/owner/allOwners', { headers: { authorization: token } });
+  const ownerData = await ownerRes.json();
+  if (ownerData.success) {
+    const me = ownerData.owners.find(o => o.username === localStorage.getItem('username'));
+    if (me) document.getElementById('stat-max-rooms').textContent = me.max_rooms;
+  }
+}
+
+async function loadRooms() {
+  const res = await fetch('/api/owner/myRooms', { headers: { authorization: token } });
+  const data = await res.json();
+  if (!data.success) return;
+  const tbody = document.getElementById('rooms-list');
+  tbody.innerHTML = '';
+  data.rooms.forEach(r => {
+    const link = window.location.origin + '/room/' + r.room_token;
+    tbody.innerHTML += `<tr>
+      <td>${r.name}</td>
+      <td>${r.type === 'public' ? 'عامة' : 'خاصة'}</td>
+      <td>${r.member_count || 0}</td>
+      <td>
+        <div class="token-box">${link}</div>
+        <button class="copy-btn" onclick="navigator.clipboard.writeText('${link}')">نسخ الرابط</button>
+      </td>
+    </tr>`;
+  });
+}
+
+async function loadRoomsDropdown() {
+  const res = await fetch('/api/owner/myRooms', { headers: { authorization: token } });
+  const data = await res.json();
+  if (!data.success) return;
+  const select = document.getElementById('room-select');
+  select.innerHTML = '<option value="">-- اختر غرفة --</option>';
+  data.rooms.forEach(r => {
+    select.innerHTML += `<option value="${r.id}">${r.name}</option>`;
+  });
+}
+
+async function loadMembers(room_id) {
+  if (!room_id) return;
+  const res = await fetch('/api/rooms/members/' + room_id, { headers: { authorization: token } });
+  const data = await res.json();
+  if (!data.success) return;
+  const tbody = document.getElementById('members-list');
+  tbody.innerHTML = '';
+  data.members.forEach(m => {
+    tbody.innerHTML += `<tr>
+      <td>${m.username}</td>
+      <td>${m.role}</td>
+      <td>${new Date(m.joined_at).toLocaleDateString('ar')}</td>
+      <td><button class="btn btn-red btn-sm" data-uid="${m.user_id}" data-rid="${room_id}">طرد</button></td>
+    </tr>`;
+  });
+  tbody.querySelectorAll('.btn-red').forEach(btn => {
+    btn.addEventListener('click', () => kickMember(btn.dataset.uid, btn.dataset.rid));
+  });
+}
+
+async function createRoom() {
+  const name = document.getElementById('room-name').value;
+  const type = document.getElementById('room-type').value;
+  const max_members = document.getElementById('room-max-members').value;
+  if (!name) { alert('أدخل اسم الغرفة'); return; }
+  const res = await fetch('/api/owner/createRoom', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', authorization: token },
+    body: JSON.stringify({ name, type, max_members: parseInt(max_members) })
+  });
+  const data = await res.json();
+  const successEl = document.getElementById('room-success');
+  const errorEl = document.getElementById('room-error');
+  if (data.success) {
+    successEl.textContent = 'تم إنشاء الغرفة! الرابط: ' + window.location.origin + '/room/' + data.token;
+    successEl.style.display = 'block';
+    errorEl.style.display = 'none';
+    document.getElementById('room-name').value = '';
+  } else {
+    errorEl.textContent = data.message;
+    errorEl.style.display = 'block';
+    successEl.style.display = 'none';
+  }
+}
+
+async function kickMember(user_id, room_id) {
+  if (!confirm('هل تريد طرد هذا العضو؟')) return;
+  const res = await fetch('/api/rooms/kick', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', authorization: token },
+    body: JSON.stringify({ room_id: parseInt(room_id), user_id: parseInt(user_id) })
+  });
+  const data = await res.json();
+  if (data.success) loadMembers(room_id);
+}
+</script>
+</body>
+</html>
