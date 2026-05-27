@@ -45,8 +45,10 @@
     .alert { padding: 12px 15px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; display: none; }
     .alert-success { background: #1a3a2a; color: #4caf82; border: 1px solid #4caf82; }
     .alert-error { background: #3a1a1a; color: #e94560; border: 1px solid #e94560; }
-    .token-box { background: #0a0a0f; border: 1px solid #1a1a2e; border-radius: 8px; padding: 10px; font-size: 12px; color: #555; word-break: break-all; margin-top: 5px; }
     .copy-btn { padding: 3px 10px; background: #1a1a2e; color: #FF8C00; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; margin-top: 5px; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; }
+    .modal.show { display: flex; }
+    .modal-box { background: #0d0d1a; border: 1px solid #FF8C00; border-radius: 12px; padding: 30px; width: 520px; max-height: 80vh; overflow-y: auto; }
   </style>
 </head>
 <body>
@@ -80,22 +82,28 @@
 
   <div class="page" id="page-rooms">
     <div class="page-title">💬 غرفي</div>
-    <div class="card">
-      <table>
-        <thead><tr><th>الاسم</th><th>النوع</th><th>الأعضاء</th><th>رابط الدخول</th></tr></thead>
-        <tbody id="rooms-list"></tbody>
-      </table>
-    </div>
+    <div id="groups-container"></div>
+    <div id="standalone-rooms-container"></div>
   </div>
 
   <div class="page" id="page-create-room">
-    <div class="page-title">➕ إنشاء غرفة جديدة</div>
+    <div class="page-title">➕ إنشاء غرفة / مجموعة غرف</div>
     <div class="card">
       <div class="alert alert-success" id="room-success"></div>
       <div class="alert alert-error" id="room-error"></div>
-      <div class="form-group">
-        <label>اسم الغرفة</label>
-        <input type="text" id="room-name" placeholder="اسم الغرفة" />
+      <div class="form-grid">
+        <div class="form-group">
+          <label>اسم الغرفة</label>
+          <input type="text" id="room-name" placeholder="اسم الغرفة" />
+        </div>
+        <div class="form-group">
+          <label>عدد الغرف</label>
+          <input type="number" id="room-count" value="1" min="1" />
+        </div>
+      </div>
+      <div class="form-group" id="group-name-section" style="display:none">
+        <label>اسم المجموعة</label>
+        <input type="text" id="group-name" placeholder="مثال: غرف السوريين" />
       </div>
       <div class="form-grid">
         <div class="form-group">
@@ -106,11 +114,45 @@
           </select>
         </div>
         <div class="form-group">
-          <label>الحد الأقصى للأعضاء</label>
+          <label>الحد الأقصى للمتواجدين</label>
           <input type="number" id="room-max-members" value="100" />
         </div>
       </div>
-      <button class="btn btn-orange" id="create-room-btn">إنشاء الغرفة</button>
+      <div class="card" style="background:#0a0a0f;margin-bottom:15px;">
+        <div class="card-title">حصص الإشراف</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>عدد Root</label>
+            <input type="number" id="max-supermaster" value="1" min="0" />
+          </div>
+          <div class="form-group">
+            <label>عدد Master</label>
+            <input type="number" id="max-master" value="3" min="0" />
+          </div>
+          <div class="form-group">
+            <label>عدد Super Admin</label>
+            <input type="number" id="max-superadmin" value="5" min="0" />
+          </div>
+          <div class="form-group">
+            <label>عدد Admin</label>
+            <input type="number" id="max-admin" value="10" min="0" />
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>ربط بـ Super Root</label>
+        <input type="text" id="superroot-search" placeholder="ابحث بالاسم أو ID..." autocomplete="off" />
+        <div id="superroot-results" style="background:#0a0a0f;border:1px solid #1a1a2e;border-radius:8px;max-height:150px;overflow-y:auto;display:none;margin-top:5px;"></div>
+        <div id="superroot-selected" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px;"></div>
+      </div>
+      <button class="btn btn-orange" id="create-room-btn">إنشاء</button>
+    </div>
+    <div class="card" id="created-rooms-result" style="display:none">
+      <div class="card-title">✅ تم إنشاء الغرف - احفظ كلمات المرور</div>
+      <table>
+        <thead><tr><th>الغرفة</th><th>الرابط</th><th>Master Password</th></tr></thead>
+        <tbody id="created-rooms-list"></tbody>
+      </table>
     </div>
   </div>
 
@@ -130,8 +172,43 @@
 
 </div>
 
+<!-- Modal تعديل الغرفة -->
+<div class="modal" id="editRoomModal">
+  <div class="modal-box">
+    <h3 style="color:#FF8C00;margin-bottom:20px">⚙️ تعديل الغرفة</h3>
+    <input type="hidden" id="edit-room-id" />
+    <div class="form-grid">
+      <div class="form-group">
+        <label>الحد الأقصى للمتواجدين</label>
+        <input type="number" id="edit-max-members" value="100" />
+      </div>
+      <div class="form-group">
+        <label>عدد Root</label>
+        <input type="number" id="edit-max-supermaster" value="1" />
+      </div>
+      <div class="form-group">
+        <label>عدد Master</label>
+        <input type="number" id="edit-max-master" value="3" />
+      </div>
+      <div class="form-group">
+        <label>عدد Super Admin</label>
+        <input type="number" id="edit-max-superadmin" value="5" />
+      </div>
+      <div class="form-group">
+        <label>عدد Admin</label>
+        <input type="number" id="edit-max-admin" value="10" />
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button class="btn btn-orange" id="save-room-btn">حفظ</button>
+      <button class="btn" style="background:transparent;border:1px solid #1a1a2e;color:#aaa;" id="close-room-modal-btn">إلغاء</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const token = localStorage.getItem('token');
+let selectedSuperRoots = [];
 
 document.addEventListener('DOMContentLoaded', () => {
   if (!token) { window.location.href = '/'; return; }
@@ -157,11 +234,76 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('create-room-btn').addEventListener('click', createRoom);
+  document.getElementById('save-room-btn').addEventListener('click', saveRoomEdit);
+  document.getElementById('close-room-modal-btn').addEventListener('click', () => {
+    document.getElementById('editRoomModal').classList.remove('show');
+  });
+
+  document.getElementById('room-count').addEventListener('change', function() {
+    const count = parseInt(this.value);
+    document.getElementById('group-name-section').style.display = count > 1 ? 'block' : 'none';
+  });
 
   document.getElementById('room-select').addEventListener('change', function() {
     loadMembers(this.value);
   });
+
+  document.getElementById('superroot-search').addEventListener('keyup', async function() {
+    const query = this.value.toLowerCase();
+    const resultsDiv = document.getElementById('superroot-results');
+    if (query.length < 1) { resultsDiv.style.display = 'none'; return; }
+    const res = await fetch('/api/users/all', { headers: { authorization: token } });
+    const data = await res.json();
+    if (!data.success) return;
+    const filtered = data.users.filter(u =>
+      u.username.toLowerCase().includes(query) ||
+      u.id.toString().includes(query)
+    );
+    if (filtered.length === 0) {
+      resultsDiv.innerHTML = '<div style="padding:10px;color:#888">لا نتائج</div>';
+      resultsDiv.style.display = 'block';
+      return;
+    }
+    resultsDiv.innerHTML = filtered.map(u => `
+      <div data-id="${u.id}" data-name="${u.username}"
+           style="padding:10px;cursor:pointer;border-bottom:1px solid #1a1a2e;font-size:13px;">
+        <b>${u.username}</b> <span style="color:#888">${u.email}</span>
+        <span style="color:#FF8C00;float:left">ID: ${u.id}</span>
+      </div>
+    `).join('');
+    resultsDiv.querySelectorAll('div').forEach(div => {
+      div.addEventListener('mouseover', () => div.style.background = '#1a1a2e');
+      div.addEventListener('mouseout', () => div.style.background = 'transparent');
+      div.addEventListener('click', () => {
+        const id = parseInt(div.dataset.id);
+        const name = div.dataset.name;
+        if (!selectedSuperRoots.find(s => s.id === id)) {
+          selectedSuperRoots.push({ id, name });
+          renderSelectedSuperRoots();
+        }
+        resultsDiv.style.display = 'none';
+        document.getElementById('superroot-search').value = '';
+      });
+    });
+    resultsDiv.style.display = 'block';
+  });
 });
+
+function renderSelectedSuperRoots() {
+  const div = document.getElementById('superroot-selected');
+  div.innerHTML = selectedSuperRoots.map(s => `
+    <div style="background:#1a1a2e;color:#FF8C00;padding:4px 10px;border-radius:20px;font-size:12px;display:flex;align-items:center;gap:5px;">
+      ${s.name} (${s.id})
+      <span style="cursor:pointer;color:#e94560;" data-id="${s.id}">✕</span>
+    </div>
+  `).join('');
+  div.querySelectorAll('span').forEach(span => {
+    span.addEventListener('click', () => {
+      selectedSuperRoots = selectedSuperRoots.filter(s => s.id !== parseInt(span.dataset.id));
+      renderSelectedSuperRoots();
+    });
+  });
+}
 
 async function loadDashboard() {
   const res = await fetch('/api/owner/myRooms', { headers: { authorization: token } });
@@ -170,7 +312,6 @@ async function loadDashboard() {
   const totalMembers = data.rooms.reduce((sum, r) => sum + (r.member_count || 0), 0);
   document.getElementById('stat-rooms').textContent = data.rooms.length;
   document.getElementById('stat-members').textContent = totalMembers;
-
   const ownerRes = await fetch('/api/owner/allOwners', { headers: { authorization: token } });
   const ownerData = await ownerRes.json();
   if (ownerData.success) {
@@ -183,20 +324,124 @@ async function loadRooms() {
   const res = await fetch('/api/owner/myRooms', { headers: { authorization: token } });
   const data = await res.json();
   if (!data.success) return;
-  const tbody = document.getElementById('rooms-list');
-  tbody.innerHTML = '';
-  data.rooms.forEach(r => {
-    const link = window.location.origin + '/room/' + r.room_token;
-    tbody.innerHTML += `<tr>
-      <td>${r.name}</td>
-      <td>${r.type === 'public' ? 'عامة' : 'خاصة'}</td>
-      <td>${r.member_count || 0}</td>
-      <td>
-        <div class="token-box">${link}</div>
-        <button class="copy-btn" onclick="navigator.clipboard.writeText('${link}')">نسخ الرابط</button>
-      </td>
-    </tr>`;
+  const groupsRes = await fetch('/api/owner/myGroups', { headers: { authorization: token } });
+  const groupsData = await groupsRes.json();
+  const groupsContainer = document.getElementById('groups-container');
+  const standaloneContainer = document.getElementById('standalone-rooms-container');
+  groupsContainer.innerHTML = '';
+  standaloneContainer.innerHTML = '';
+  const groupedRoomIds = new Set();
+  if (groupsData.success && groupsData.groups.length > 0) {
+    groupsData.groups.forEach(group => {
+      const groupRooms = data.rooms.filter(r => group.room_ids.includes(r.id));
+      groupRooms.forEach(r => groupedRoomIds.add(r.id));
+      const div = document.createElement('div');
+      div.className = 'card';
+      div.style.cssText = 'border-color:#FF8C00;margin-bottom:20px;';
+      div.innerHTML = `
+        <div class="card-title">📁 ${group.name} (${groupRooms.length} غرفة)</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;">
+          ${groupRooms.map(r => roomCardHTML(r)).join('')}
+        </div>`;
+      groupsContainer.appendChild(div);
+    });
+  }
+  const standaloneRooms = data.rooms.filter(r => !groupedRoomIds.has(r.id));
+  if (standaloneRooms.length > 0) {
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.innerHTML = `
+      <div class="card-title">💬 الغرف المستقلة</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;">
+        ${standaloneRooms.map(r => roomCardHTML(r)).join('')}
+      </div>`;
+    standaloneContainer.appendChild(div);
+  }
+  document.querySelectorAll('.btn-edit-room').forEach(btn => {
+    btn.addEventListener('click', () => editRoom(btn.dataset.id));
   });
+  document.querySelectorAll('.btn-freeze-room').forEach(btn => {
+    btn.addEventListener('click', () => freezeRoom(btn.dataset.id, btn.dataset.name));
+  });
+  document.querySelectorAll('.btn-delete-room').forEach(btn => {
+    btn.addEventListener('click', () => deleteRoom(btn.dataset.id, btn.dataset.name));
+  });
+  document.querySelectorAll('.btn-copy-link').forEach(btn => {
+    btn.addEventListener('click', () => navigator.clipboard.writeText(btn.dataset.link));
+  });
+}
+
+function roomCardHTML(r) {
+  const link = window.location.origin + '/room/' + r.room_token;
+  const frozen = r.frozen ? '🔴 مجمدة' : '🟢 نشطة';
+  const frozenStyle = r.frozen ? 'border-color:#e94560' : '';
+  return `
+    <div style="background:#0a0a0f;border:1px solid #1a1a2e;${frozenStyle};border-radius:10px;padding:15px;">
+      <div style="font-weight:bold;color:#FF8C00;margin-bottom:8px;">${r.name}</div>
+      <div style="font-size:12px;color:#888;margin-bottom:5px;">
+        👥 ${r.member_count || 0} عضو | ${r.type === 'public' ? 'عامة' : 'خاصة'} | ${frozen}
+      </div>
+      <div style="font-size:11px;color:#555;margin-bottom:8px;">${r.room_token}</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;">
+        <button class="copy-btn btn-copy-link" data-link="${link}">نسخ الرابط</button>
+        <button class="btn btn-sm btn-edit-room" data-id="${r.id}" style="background:#1a1a2e;color:#FF8C00;border:none;cursor:pointer;">⚙️ تعديل</button>
+        <button class="btn btn-sm btn-freeze-room" data-id="${r.id}" data-name="${r.name}" style="background:#1a1a2e;color:#3498DB;border:none;cursor:pointer;">${r.frozen ? '▶️ تفعيل' : '❄️ تجميد'}</button>
+        <button class="btn btn-sm btn-delete-room" data-id="${r.id}" data-name="${r.name}" style="background:#1a1a2e;color:#e94560;border:none;cursor:pointer;">🗑️ حذف</button>
+      </div>
+    </div>`;
+}
+
+function editRoom(roomId) {
+  document.getElementById('edit-room-id').value = roomId;
+  document.getElementById('editRoomModal').classList.add('show');
+}
+
+async function freezeRoom(roomId, roomName) {
+  if (!confirm('هل تريد تجميد/تفعيل غرفة: ' + roomName + '؟')) return;
+  const res = await fetch('/api/owner/freezeRoom', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', authorization: token },
+    body: JSON.stringify({ room_id: parseInt(roomId) })
+  });
+  const data = await res.json();
+  if (data.success) loadRooms();
+}
+
+async function deleteRoom(roomId, roomName) {
+  if (!confirm('هل أنت متأكد من حذف غرفة: ' + roomName + '؟')) return;
+  const res = await fetch('/api/owner/deleteRoom', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', authorization: token },
+    body: JSON.stringify({ room_id: parseInt(roomId) })
+  });
+  const data = await res.json();
+  if (data.success) loadRooms();
+}
+
+async function saveRoomEdit() {
+  const room_id = document.getElementById('edit-room-id').value;
+  const max_members = document.getElementById('edit-max-members').value;
+  const max_supermaster = document.getElementById('edit-max-supermaster').value;
+  const max_master = document.getElementById('edit-max-master').value;
+  const max_superadmin = document.getElementById('edit-max-superadmin').value;
+  const max_admin = document.getElementById('edit-max-admin').value;
+  const res = await fetch('/api/owner/updateRoom', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', authorization: token },
+    body: JSON.stringify({
+      room_id: parseInt(room_id),
+      max_members: parseInt(max_members),
+      max_supermaster: parseInt(max_supermaster),
+      max_master: parseInt(max_master),
+      max_superadmin: parseInt(max_superadmin),
+      max_admin: parseInt(max_admin)
+    })
+  });
+  const data = await res.json();
+  if (data.success) {
+    document.getElementById('editRoomModal').classList.remove('show');
+    loadRooms();
+  }
 }
 
 async function loadRoomsDropdown() {
@@ -232,22 +477,50 @@ async function loadMembers(room_id) {
 
 async function createRoom() {
   const name = document.getElementById('room-name').value;
+  const count = parseInt(document.getElementById('room-count').value) || 1;
   const type = document.getElementById('room-type').value;
   const max_members = document.getElementById('room-max-members').value;
+  const max_supermaster = document.getElementById('max-supermaster').value;
+  const max_master = document.getElementById('max-master').value;
+  const max_superadmin = document.getElementById('max-superadmin').value;
+  const max_admin = document.getElementById('max-admin').value;
+  const group_name = document.getElementById('group-name').value;
+  const superroot_ids = selectedSuperRoots.map(s => s.id);
   if (!name) { alert('أدخل اسم الغرفة'); return; }
   const res = await fetch('/api/owner/createRoom', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', authorization: token },
-    body: JSON.stringify({ name, type, max_members: parseInt(max_members) })
+    body: JSON.stringify({
+      name, type, count,
+      max_members: parseInt(max_members),
+      max_supermaster: parseInt(max_supermaster),
+      max_master: parseInt(max_master),
+      max_superadmin: parseInt(max_superadmin),
+      max_admin: parseInt(max_admin),
+      group_name,
+      superroot_ids
+    })
   });
   const data = await res.json();
   const successEl = document.getElementById('room-success');
   const errorEl = document.getElementById('room-error');
   if (data.success) {
-    successEl.textContent = 'تم إنشاء الغرفة! الرابط: ' + window.location.origin + '/room/' + data.token;
+    successEl.textContent = 'تم إنشاء ' + data.rooms.length + ' غرفة بنجاح!';
     successEl.style.display = 'block';
     errorEl.style.display = 'none';
-    document.getElementById('room-name').value = '';
+    const tbody = document.getElementById('created-rooms-list');
+    tbody.innerHTML = '';
+    data.rooms.forEach(r => {
+      tbody.innerHTML += `<tr>
+        <td>${r.name}</td>
+        <td>
+          <div style="font-size:12px;color:#FF8C00">${window.location.origin}/room/${r.token}</div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('${window.location.origin}/room/${r.token}')">نسخ</button>
+        </td>
+        <td style="color:#e94560;font-weight:bold">${r.master_password}</td>
+      </tr>`;
+    });
+    document.getElementById('created-rooms-result').style.display = 'block';
   } else {
     errorEl.textContent = data.message;
     errorEl.style.display = 'block';
@@ -266,5 +539,6 @@ async function kickMember(user_id, room_id) {
   if (data.success) loadMembers(room_id);
 }
 </script>
+
 </body>
 </html>
