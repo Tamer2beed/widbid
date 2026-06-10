@@ -358,6 +358,84 @@ html,body { height:100%; overflow:hidden; font-family:'Tajawal',sans-serif; back
 .picker-icon { font-size:32px; }
 .picker-label { font-size:13px; font-weight:600; color:var(--text-dark); }
 
+/* ═══════════ ADMIN STATS BAR ═══════════ */
+.stats-bar {
+  position:fixed; top:var(--header-h); right:0; left:0; z-index:90;
+  height:0; overflow:hidden;
+  background:rgba(0,0,0,0.35);
+  display:flex; align-items:center; justify-content:space-around;
+  transition:height .2s; backdrop-filter:blur(4px);
+}
+.stats-bar.visible { height:32px; }
+.stats-bar .stat { display:flex; align-items:center; gap:4px; font-size:11px; color:rgba(255,255,255,0.85); font-weight:500; }
+.stats-bar .stat strong { color:#fff; }
+
+/* ═══════════ ADMIN TOOLS SHEET ═══════════ */
+.admin-sheet {
+  position:fixed; bottom:0; right:0; left:0; z-index:250;
+  background:var(--bg-card); border-radius:20px 20px 0 0;
+  padding:16px 16px 32px;
+  transform:translateY(100%); transition:transform .25s ease;
+  box-shadow:0 -4px 24px rgba(0,0,0,0.18);
+}
+.admin-sheet.open { transform:translateY(0); }
+.admin-sheet-title {
+  font-size:15px; font-weight:700; color:var(--text-dark);
+  text-align:center; margin-bottom:14px;
+  padding-bottom:10px; border-bottom:1px solid var(--border);
+}
+.admin-tool {
+  display:flex; align-items:center; gap:12px;
+  padding:13px 4px; border-bottom:1px solid rgba(0,0,0,0.06);
+  cursor:pointer; border-radius:var(--radius-sm);
+}
+.admin-tool:active { background:var(--bg-light); }
+.admin-tool .t-icon { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+.admin-tool .t-name { font-size:14px; font-weight:600; color:var(--text-dark); }
+.admin-tool .t-desc { font-size:11px; color:var(--text-muted); margin-top:2px; }
+.admin-tool.danger .t-name { color:var(--danger); }
+
+/* ═══════════ CONTEXT MENU ═══════════ */
+.ctx-menu {
+  position:fixed; z-index:400; background:var(--bg-card);
+  border-radius:var(--radius-md); box-shadow:0 8px 32px rgba(0,0,0,0.2);
+  overflow:hidden; min-width:200px;
+  animation:popIn .15s ease;
+}
+@keyframes popIn { from{transform:scale(.92);opacity:0} to{transform:scale(1);opacity:1} }
+.ctx-header {
+  display:flex; align-items:center; gap:8px;
+  padding:12px 14px; background:var(--bg-light); border-bottom:1px solid var(--border);
+}
+.ctx-avatar { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,var(--primary),var(--secondary)); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:#fff; flex-shrink:0; }
+.ctx-username { font-size:13px; font-weight:700; color:var(--text-dark); }
+.ctx-rank { font-size:10px; font-weight:600; padding:2px 7px; border-radius:10px; margin-top:2px; display:inline-block; }
+.ctx-item {
+  display:flex; align-items:center; gap:10px;
+  padding:12px 14px; cursor:pointer; font-size:14px; font-weight:500;
+  color:var(--text-dark); border-bottom:1px solid rgba(0,0,0,0.05);
+}
+.ctx-item:active { background:var(--bg-light); }
+.ctx-item.danger { color:var(--danger); }
+.ctx-item .ci-icon { font-size:18px; width:22px; text-align:center; }
+.ctx-no-action { padding:14px; text-align:center; font-size:13px; color:var(--text-muted); }
+
+/* ═══════════ WARN DIALOG ═══════════ */
+.warn-dialog {
+  position:fixed; inset:0; z-index:500;
+  background:rgba(0,0,0,0.5); display:none;
+  align-items:center; justify-content:center; padding:20px;
+}
+.warn-dialog.show { display:flex; }
+.warn-box { background:var(--bg-card); border-radius:var(--radius-lg); padding:20px; width:100%; max-width:340px; box-shadow:0 8px 32px rgba(0,0,0,0.2); animation:popIn .2s ease; }
+.warn-box h3 { font-size:16px; font-weight:700; margin-bottom:12px; color:var(--text-dark); }
+.warn-box textarea { width:100%; height:80px; border:1.5px solid var(--border); border-radius:10px; padding:10px; resize:none; outline:none; font-family:'Tajawal',sans-serif; font-size:13px; direction:rtl; }
+.warn-box textarea:focus { border-color:var(--warning); }
+.warn-actions { display:flex; gap:8px; margin-top:12px; }
+.warn-actions button { flex:1; height:44px; border:none; border-radius:10px; font-family:'Tajawal',sans-serif; font-size:14px; font-weight:600; cursor:pointer; }
+.btn-warn-send { background:var(--warning); color:#fff; }
+.btn-warn-cancel { background:var(--bg-light); color:var(--text-muted); }
+
 /* ═══════════ TOAST ═══════════ */
 .toast {
   position:fixed; top:70px; right:50%; transform:translateX(50%);
@@ -389,6 +467,7 @@ html,body { height:100%; overflow:hidden; font-family:'Tajawal',sans-serif; back
   </div>
   <div class="header-title" id="roomTitle">...</div>
   <div class="header-icons">
+    <span class="header-icon" id="adminToolBtn" style="display:none" onclick="openAdminSheet()">🛠️</span>
     <span class="header-icon" onclick="toggleMembers()">👥</span>
     <span class="header-icon">💬</span>
     <span class="header-icon" onclick="openSideMenu()">☰</span>
@@ -514,6 +593,33 @@ html,body { height:100%; overflow:hidden; font-family:'Tajawal',sans-serif; back
   <div class="picker-btn" onclick="toggleVideo()">
     <span class="picker-icon">🎥</span>
     <span class="picker-label">كاميرا</span>
+  </div>
+</div>
+
+<!-- ═══ ADMIN STATS BAR ═══ -->
+<div class="stats-bar" id="statsBar">
+  <div class="stat">👥 <strong id="statOnline">0</strong> متواجد</div>
+  <div class="stat">💬 <strong id="statMsgs">0</strong> رسالة</div>
+  <div class="stat" id="statRankWrap" style="display:none">🔰 <strong id="statRankName">Admin</strong></div>
+</div>
+
+<!-- ═══ ADMIN TOOLS SHEET ═══ -->
+<div class="overlay" id="adminOverlay" onclick="closeAdminSheet()"></div>
+<div class="admin-sheet" id="adminSheet">
+  <div class="admin-sheet-title" id="adminSheetTitle">🔰 أدوات المشرف</div>
+  <div id="adminToolsList"></div>
+</div>
+
+<!-- ═══ WARN DIALOG ═══ -->
+<div class="warn-dialog" id="warnDialog">
+  <div class="warn-box">
+    <h3>⚠️ إرسال تحذير رسمي</h3>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px">سيُرسل للمستخدم <strong id="warnTarget"></strong> ويُحفظ في سجله</p>
+    <textarea id="warnText" placeholder="اكتب سبب التحذير..."></textarea>
+    <div class="warn-actions">
+      <button class="btn-warn-send" onclick="sendWarn()">إرسال</button>
+      <button class="btn-warn-cancel" onclick="closeWarnDialog()">إلغاء</button>
+    </div>
   </div>
 </div>
 
@@ -739,40 +845,66 @@ function updateMemberStatus(username, status) {
 // ── قائمة الأعضاء (Context Menu) ──────────
 function showMemberMenu(name, rank) {
   if (name === username) return;
-  // للـ Guest: فقط رسالة خاصة
-  const actions = [{ icon:'💬', label:'رسالة خاصة', fn: () => openPrivateChat(name) }];
-  // الأدوار الأعلى تُضاف هنا في مراحل قادمة
-  if (userRank >= 500) {
-    actions.push({ icon:'🔇', label:'كتم المايك', fn: () => muteUser(name), danger:false });
-    actions.push({ icon:'🚪', label:'طرد', fn: () => kickUser(name), danger:true });
-  }
-  showContextMenu(actions);
-}
-
-function showContextMenu(actions) {
-  const existing = document.getElementById('contextMenu');
+  const existing = document.getElementById('ctxMenu');
   if (existing) existing.remove();
+
+  const color = getRankColor(rank);
+  const rankName = getRankName(rank);
+
   const menu = document.createElement('div');
-  menu.id = 'contextMenu';
+  menu.id = 'ctxMenu';
+  menu.className = 'ctx-menu';
   menu.style.cssText = `
-    position:fixed;bottom:calc(var(--toolbar1-h) + var(--toolbar2-h) + 8px);
-    right:50%;transform:translateX(50%);z-index:400;
-    background:#fff;border-radius:var(--radius-md);
-    box-shadow:var(--shadow-lg);overflow:hidden;min-width:180px;
+    bottom:calc(var(--toolbar1-h) + var(--toolbar2-h) + 12px);
+    right:50%; transform:translateX(50%);
   `;
-  actions.forEach(a => {
-    const btn = document.createElement('div');
-    btn.style.cssText = `
-      padding:13px 16px;display:flex;align-items:center;gap:10px;
-      cursor:pointer;font-size:14px;font-family:Tajawal,sans-serif;
-      color:${a.danger?'#E74C3C':'#1A1A2E'};border-bottom:1px solid #eee;
-    `;
-    btn.innerHTML = `<span>${a.icon}</span><span>${a.label}</span>`;
-    btn.onclick = () => { menu.remove(); a.fn(); };
-    menu.appendChild(btn);
-  });
+
+  // هيدر القائمة
+  menu.innerHTML = `
+    <div class="ctx-header">
+      <div class="ctx-avatar" style="border:2px solid ${color}">${name.charAt(0)}</div>
+      <div>
+        <div class="ctx-username" style="color:${color}">${name}</div>
+        <span class="ctx-rank" style="background:${color}22;color:${color}">${rankName}</span>
+      </div>
+    </div>
+  `;
+
+  const actions = [];
+
+  // رسالة خاصة — للجميع
+  actions.push({ icon:'💬', label:'رسالة خاصة', fn:() => openPrivateChat(name) });
+
+  // صلاحيات Admin (500+) على من رتبته أقل
+  if (userRank >= 500 && userRank > rank) {
+    actions.push({ icon:'🔇', label:'كتم المايك', fn:() => muteUser(name) });
+    actions.push({ icon:'🔊', label:'فك الكتم',   fn:() => unmuteUser(name) });
+    actions.push({ icon:'🚪', label:'طرد من الغرفة', fn:() => kickUser(name), danger:true });
+  }
+
+  // تحذير رسمي — Super Admin (600+)
+  if (userRank >= 600 && userRank > rank) {
+    actions.push({ icon:'⚠️', label:'تحذير رسمي', fn:() => openWarnDialog(name) });
+  }
+
+  // لا صلاحية على من رتبته مساوية أو أعلى
+  if (userRank >= 500 && userRank <= rank) {
+    menu.innerHTML += `<div class="ctx-no-action">لا يمكن تنفيذ إجراء على هذه الرتبة</div>`;
+  } else {
+    actions.forEach(a => {
+      const item = document.createElement('div');
+      item.className = 'ctx-item' + (a.danger ? ' danger' : '');
+      item.innerHTML = `<span class="ci-icon">${a.icon}</span><span>${a.label}</span>`;
+      item.onclick = () => { menu.remove(); a.fn(); };
+      menu.appendChild(item);
+    });
+  }
+
   document.body.appendChild(menu);
-  setTimeout(() => { document.addEventListener('click', () => menu.remove(), {once:true}); }, 100);
+  // إغلاق عند الضغط خارجاً
+  setTimeout(() => {
+    document.addEventListener('click', () => menu.remove(), { once: true });
+  }, 100);
 }
 
 // ── عمليات المشرفين (تُفعَّل حسب الرتبة) ──
@@ -988,13 +1120,138 @@ function playNotif() {
   } catch(e) {}
 }
 
+// ── لوحة أدوات المشرف ─────────────────────
+function openAdminSheet() {
+  const sheet    = document.getElementById('adminSheet');
+  const overlay  = document.getElementById('adminOverlay');
+  const title    = document.getElementById('adminSheetTitle');
+  const toolList = document.getElementById('adminToolsList');
+
+  const isAdmin      = userRank >= 500;
+  const isSuperAdmin = userRank >= 600;
+
+  title.textContent = userRank >= 600 ? '🔰 أدوات السوبر أدمن' : '🔰 أدوات الأدمن';
+
+  const tools = [
+    {
+      icon:'🗑️', bg:'#FFE0E0', label:'مسح الشات',
+      desc:'مسح جميع الرسائل للجميع',
+      fn: clearChat, show: isAdmin
+    },
+    {
+      icon:'🔇', bg:'#FFF3CD', label:'كتم الجميع',
+      desc:'منع Guest و Member من الكتابة',
+      fn: muteAll, show: isAdmin
+    },
+    {
+      icon:'🔊', bg:'#D4EDDA', label:'فك كتم الجميع',
+      desc:'السماح للجميع بالكتابة',
+      fn: unmuteAll, show: isAdmin
+    },
+    {
+      icon:'📋', bg:'#D1ECF1', label:'قائمة المكتومين',
+      desc:'عرض الأعضاء المكتومين حالياً',
+      fn: showMutedList, show: isSuperAdmin
+    },
+    {
+      icon:'📊', bg:'#E2D9F3', label:'إحصائيات الغرفة',
+      desc:`${document.getElementById('statOnline').textContent} متواجد الآن`,
+      fn: showRoomStats, show: isAdmin
+    },
+  ];
+
+  toolList.innerHTML = tools.filter(t => t.show).map((t,i) => `
+    <div class="admin-tool" onclick="handleAdminTool(${i})">
+      <div class="t-icon" style="background:${t.bg}">${t.icon}</div>
+      <div class="t-info">
+        <div class="t-name">${t.label}</div>
+        <div class="t-desc">${t.desc}</div>
+      </div>
+    </div>
+  `).join('');
+
+  // حفظ الدوال للاستدعاء
+  window._adminTools = tools.filter(t => t.show);
+
+  sheet.classList.add('open');
+  overlay.classList.add('show');
+}
+
+function handleAdminTool(i) {
+  closeAdminSheet();
+  window._adminTools[i].fn();
+}
+
+function closeAdminSheet() {
+  document.getElementById('adminSheet').classList.remove('open');
+  document.getElementById('adminOverlay').classList.remove('show');
+}
+
+function muteAll() {
+  socket.emit('muteAll', { room_id: roomId, by: username });
+  showToast('🔇 تم كتم الجميع');
+}
+function unmuteAll() {
+  socket.emit('unmuteAll', { room_id: roomId, by: username });
+  showToast('🔊 تم فك كتم الجميع');
+}
+function showMutedList() { showToast('📋 قائمة المكتومين — قريباً'); }
+function showRoomStats()  { showToast(`📊 المتواجدون: ${document.getElementById('statOnline').textContent}`); }
+function unmuteUser(name) {
+  socket.emit('unmuteUser', { room_id: roomId, target: name, by: username });
+  showToast(`🔊 تم فك كتم ${name}`);
+}
+
+// ── تحذير رسمي (Super Admin 600+) ──────────
+let warnTargetName = '';
+function openWarnDialog(name) {
+  warnTargetName = name;
+  document.getElementById('warnTarget').textContent = name;
+  document.getElementById('warnText').value = '';
+  document.getElementById('warnDialog').classList.add('show');
+}
+function closeWarnDialog() {
+  document.getElementById('warnDialog').classList.remove('show');
+}
+function sendWarn() {
+  const reason = document.getElementById('warnText').value.trim();
+  if (!reason) { showToast('⚠️ اكتب سبب التحذير'); return; }
+  socket.emit('warnUser', {
+    room_id: roomId, target: warnTargetName,
+    reason, by: username
+  });
+  closeWarnDialog();
+  showToast(`⚠️ تم إرسال تحذير لـ ${warnTargetName}`);
+}
+
+// ── تحديث الإحصائيات ───────────────────────
+socket.on('onlineUsers', (users) => {
+  renderMembers(users);
+  const count = users.length;
+  document.getElementById('statOnline').textContent = count;
+  msgCount = 0; // reset عند تحديث المتواجدين
+});
+
+let msgCount = 0;
+const origNewMsg = socket.listeners('newMessage')[0];
+socket.on('newMessage', () => {
+  msgCount++;
+  document.getElementById('statMsgs').textContent = msgCount;
+});
+
 // ── صلاحيات الشاشة حسب الرتبة ─────────────
 function applyRankPermissions() {
-  // مسح النص — Admin فأعلى
+  // Stats bar — Admin فأعلى
   if (userRank >= 500) {
+    document.getElementById('statsBar').classList.add('visible');
+    document.getElementById('statRankWrap').style.display = 'flex';
+    document.getElementById('statRankName').textContent = getRankName(userRank);
+    document.getElementById('adminToolBtn').style.display = 'block';
     document.getElementById('clearTextBtn').style.display = 'flex';
+    // تعديل الـ main لمراعاة الـ stats bar
+    document.getElementById('mainArea').style.top =
+      `calc(var(--header-h) + 32px)`;
   }
-  // لاحقاً: إضافة أزرار الطرد والكتم حسب الرتبة
 }
 applyRankPermissions();
 </script>
@@ -1009,49 +1266,64 @@ socket.on('youAreMuted', (d) => {
   showToast(`🔇 تم كتمك بواسطة ${d.by}`, 'warning');
   document.getElementById('msgInput').disabled = true;
   document.getElementById('msgInput').placeholder = 'أنت مكتوم...';
+  document.getElementById('msgInput').style.opacity = '0.5';
 });
 
 socket.on('youAreUnmuted', (d) => {
   showToast(`✅ تم فك كتمك`, 'success');
   document.getElementById('msgInput').disabled = false;
   document.getElementById('msgInput').placeholder = 'اكتب رسالة...';
+  document.getElementById('msgInput').style.opacity = '1';
 });
 
-socket.on('userMuted', (d) => {
-  if (d.username !== username) addSystem(`🔇 تم كتم ${d.username} بواسطة ${d.by}`);
+socket.on('userMuted',   (d) => { if (d.username !== username) addSystem(`🔇 تم كتم ${d.username} بواسطة ${d.by}`); });
+socket.on('userUnmuted', (d) => { if (d.username !== username) addSystem(`🔊 تم فك كتم ${d.username}`); });
+
+// تحذير رسمي
+socket.on('youAreWarned', (d) => {
+  const msg = document.createElement('div');
+  msg.style.cssText = `
+    position:fixed;top:50%;right:50%;transform:translate(50%,-50%);
+    z-index:500;background:#fff;border-radius:16px;padding:20px;
+    width:85%;max-width:320px;box-shadow:0 8px 32px rgba(0,0,0,0.25);
+    text-align:center;font-family:Tajawal,sans-serif;
+  `;
+  msg.innerHTML = `
+    <div style="font-size:40px;margin-bottom:8px">⚠️</div>
+    <div style="font-size:15px;font-weight:700;color:#F39C12;margin-bottom:8px">تحذير رسمي</div>
+    <div style="font-size:13px;color:#555;margin-bottom:4px">من: <strong>${d.by}</strong></div>
+    <div style="font-size:13px;color:#333;margin:10px 0;padding:10px;background:#FFF3CD;border-radius:8px">${d.reason}</div>
+    <button onclick="this.parentElement.remove()" style="
+      width:100%;height:42px;background:#2C3E7A;color:#fff;
+      border:none;border-radius:10px;font-family:Tajawal,sans-serif;
+      font-size:14px;font-weight:600;cursor:pointer;margin-top:4px">موافق</button>
+  `;
+  document.body.appendChild(msg);
 });
 
-socket.on('userUnmuted', (d) => {
-  if (d.username !== username) addSystem(`✅ تم فك كتم ${d.username}`);
-});
+socket.on('userWarned',  (d) => { if (d.username !== username) addSystem(`⚠️ تم تحذير ${d.username} بواسطة ${d.by}`); });
 
 // طُرد
 socket.on('youAreKicked', (d) => {
   alert(`تم طردك من الغرفة بواسطة ${d.by}`);
   window.location.href = '/rooms.html';
 });
-
-socket.on('userKicked', (d) => {
-  if (d.username !== username) addSystem(`🚪 ${d.username} طُرد بواسطة ${d.by}`);
-});
+socket.on('userKicked', (d) => { if (d.username !== username) addSystem(`🚪 ${d.username} طُرد بواسطة ${d.by}`); });
 
 // مسح الشات
 socket.on('chatCleared', (d) => {
   document.getElementById('messages').innerHTML =
     `<div class="welcome-banner" id="welcomeBanner">تم مسح الشات بواسطة ${d.by}</div>`;
+  msgCount = 0;
+  document.getElementById('statMsgs').textContent = '0';
 });
+
+// رسالة نظام عامة
+socket.on('systemMessage', (text) => { addSystem(typeof text === 'string' ? text : text.text || ''); });
 
 // تغيير الثيم
-socket.on('themeChanged', (d) => {
-  applyTheme(d.theme);
-  addSystem(`🎨 تم تغيير الثيم بواسطة ${d.by}`);
-});
-
-// تحديث البانر
-socket.on('welcomeUpdated', (d) => {
-  const banner = document.getElementById('welcomeBanner');
-  if (banner) banner.innerHTML = d.message;
-});
+socket.on('themeChanged',   (d) => { applyTheme(d.theme); addSystem(`🎨 تم تغيير الثيم بواسطة ${d.by}`); });
+socket.on('welcomeUpdated', (d) => { const b = document.getElementById('welcomeBanner'); if (b) b.innerHTML = d.message; });
 
 // المايك
 socket.on('micOn',  (d) => updateMemberStatus(d.username, 'speaking'));
