@@ -403,6 +403,58 @@ io.on('connection', (socket) => {
     });
   });
 
+  /* ─── كتم الجميع ──────────────────────────── */
+  socket.on('muteAll', async (data) => {
+    const { room_id, by } = data;
+    if ((socket.userData?.rank || 0) < 500) return;
+    const roomSockets = await io.in(room_id).fetchSockets();
+    roomSockets.forEach(s => {
+      if (s.userData && s.userData.rank < 500 && s.userData.username !== by) {
+        s.userData.isMuted = true;
+        s.emit('youAreMuted', { by });
+      }
+    });
+    io.to(room_id).emit('systemMessage', `🔇 ${by} أوقف الكتابة للجميع`);
+  });
+
+  /* ─── فك كتم الجميع ───────────────────────── */
+  socket.on('unmuteAll', async (data) => {
+    const { room_id, by } = data;
+    if ((socket.userData?.rank || 0) < 500) return;
+    const roomSockets = await io.in(room_id).fetchSockets();
+    roomSockets.forEach(s => {
+      if (s.userData) {
+        s.userData.isMuted = false;
+        s.emit('youAreUnmuted', { by });
+      }
+    });
+    io.to(room_id).emit('systemMessage', `🔊 ${by} فتح الكتابة للجميع`);
+  });
+
+  /* ─── تحذير رسمي (Super Admin 600+) ────────── */
+  socket.on('warnUser', async (data) => {
+    const { room_id, target, reason, by } = data;
+    if ((socket.userData?.rank || 0) < 600) return;
+    const roomSockets = await io.in(room_id).fetchSockets();
+    const targetSocket = roomSockets.find(s => s.userData?.username === target);
+    if (targetSocket) {
+      targetSocket.emit('youAreWarned', { by, reason });
+    }
+    io.to(room_id).emit('userWarned', { username: target, by });
+    // حفظ التحذير في DB اختياري
+    try {
+      await db.query(
+        'INSERT INTO warnings (room_id, target_username, reason, warned_by) VALUES (?,?,?,?)',
+        [room_id, target, reason, by]
+      );
+    } catch {}
+  });
+
+  /* ─── رسالة نظام عامة ─────────────────────── */
+  socket.on('systemMessage', (data) => {
+    io.to(data.room_id).emit('systemMessage', data.text);
+  });
+
   /* ─── قطع الاتصال ─────────────────────────── */
   socket.on('disconnect', async () => {
     console.log(`❌ disconnected: ${socket.id}`);
