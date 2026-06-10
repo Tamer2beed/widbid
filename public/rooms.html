@@ -1,133 +1,670 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WidBid - الغرف</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Arial; background: #0d0d1a; color: white; min-height: 100vh; }
-    .navbar { background: #16213e; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1a2a4a; }
-    .navbar h1 { color: #c9a84c; font-size: 24px; letter-spacing: 3px; }
-    .navbar .user { display: flex; align-items: center; gap: 15px; }
-    .navbar .username { color: #aaa; font-size: 14px; }
-    .btn-logout { padding: 7px 15px; background: transparent; color: #e94560; border: 1px solid #e94560; border-radius: 6px; cursor: pointer; font-size: 13px; }
-    .btn-logout:hover { background: #e94560; color: white; }
-    .container { max-width: 1000px; margin: 30px auto; padding: 0 20px; }
-    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-    .header h2 { color: #c9a84c; font-size: 20px; }
-    .btn-create { padding: 10px 20px; background: #c9a84c; color: #0d0d1a; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px; }
-    .btn-create:hover { background: #e0bc5e; }
-    .rooms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
-    .room-card { background: #16213e; border: 1px solid #1a2a4a; border-radius: 12px; padding: 20px; cursor: pointer; transition: 0.3s; }
-    .room-card:hover { border-color: #c9a84c; transform: translateY(-2px); }
-    .room-name { font-size: 16px; font-weight: bold; margin-bottom: 8px; }
-    .room-info { color: #888; font-size: 13px; display: flex; gap: 15px; }
-    .room-type { padding: 3px 10px; border-radius: 20px; font-size: 11px; margin-top: 10px; display: inline-block; }
-    .public { background: #1a3a2a; color: #4caf82; }
-    .private { background: #3a1a1a; color: #e94560; }
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; z-index: 100; }
-    .modal.show { display: flex; }
-    .modal-card { background: #16213e; border-radius: 12px; padding: 30px; width: 380px; border: 1px solid #1a2a4a; }
-    .modal-card h3 { color: #c9a84c; margin-bottom: 20px; }
-    .form-group { margin-bottom: 15px; }
-    .form-group label { display: block; margin-bottom: 7px; color: #aaa; font-size: 13px; }
-    .form-group input, .form-group select { width: 100%; padding: 10px; background: #0d0d1a; border: 1px solid #1a2a4a; border-radius: 8px; color: white; font-size: 14px; outline: none; }
-    .modal-btns { display: flex; gap: 10px; margin-top: 20px; }
-    .btn-confirm { flex: 1; padding: 11px; background: #c9a84c; color: #0d0d1a; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
-    .btn-cancel { flex: 1; padding: 11px; background: transparent; color: #aaa; border: 1px solid #1a2a4a; border-radius: 8px; cursor: pointer; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>WidBid — الغرف</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary:   #2C3E7A;
+  --secondary: #4A90D9;
+  --accent:    #F0A500;
+  --success:   #27AE60;
+  --danger:    #E74C3C;
+  --bg:        #F4F6F9;
+  --card:      #FFFFFF;
+  --text:      #1A1A2E;
+  --muted:     #7F8C8D;
+  --border:    #E0E0E0;
+  --header-h:  56px;
+  --bottom-h:  62px;
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body { height:100%; font-family:'Tajawal',sans-serif; background:var(--bg); overflow:hidden; }
+
+/* ══ HEADER ══ */
+.header {
+  position:fixed; top:0; right:0; left:0; z-index:100;
+  height:var(--header-h);
+  background:var(--primary);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 2px 8px rgba(0,0,0,0.15);
+}
+.logo { color:#fff; font-size:24px; font-weight:900; letter-spacing:3px; }
+.logo span { color:var(--accent); }
+.header-right { position:absolute; right:14px; display:flex; gap:10px; }
+.header-left  { position:absolute; left:14px; }
+.h-icon { color:#fff; font-size:22px; cursor:pointer; opacity:.85; }
+.h-icon:active { opacity:.5; }
+.notif-badge {
+  position:relative; display:inline-block;
+}
+.notif-badge::after {
+  content:attr(data-count);
+  position:absolute; top:-4px; left:-4px;
+  background:var(--danger); color:#fff;
+  font-size:9px; font-weight:700;
+  width:16px; height:16px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  display:none;
+}
+.notif-badge.has-notif::after { display:flex; }
+
+/* ══ TABS ══ */
+.tabs {
+  position:fixed; top:var(--header-h); right:0; left:0; z-index:90;
+  background:var(--card);
+  display:flex;
+  border-bottom:2px solid var(--border);
+  box-shadow:0 1px 4px rgba(0,0,0,0.05);
+}
+.tab {
+  flex:1; padding:11px 4px; text-align:center;
+  font-size:13px; font-weight:600; color:var(--muted);
+  cursor:pointer; border-bottom:2px solid transparent;
+  margin-bottom:-2px; transition:all .2s;
+}
+.tab.active { color:var(--primary); border-bottom-color:var(--primary); }
+.tab .tab-icon { font-size:16px; display:block; margin-bottom:2px; }
+
+/* ══ CONTENT ══ */
+.content {
+  position:fixed;
+  top:calc(var(--header-h) + 46px);
+  bottom:var(--bottom-h);
+  right:0; left:0;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+}
+.tab-pane { display:none; }
+.tab-pane.active { display:block; }
+
+/* ══ SEARCH BAR ══ */
+.search-wrap {
+  padding:10px 12px;
+  background:var(--card);
+  border-bottom:1px solid var(--border);
+  position:sticky; top:0; z-index:10;
+}
+.search-box {
+  display:flex; align-items:center; gap:8px;
+  background:var(--bg); border-radius:24px;
+  padding:8px 14px;
+  border:1px solid var(--border);
+}
+.search-box input {
+  flex:1; border:none; background:transparent; outline:none;
+  font-family:'Tajawal',sans-serif; font-size:14px;
+  color:var(--text); direction:rtl;
+}
+.search-box input::placeholder { color:var(--muted); }
+.search-box .s-icon { font-size:18px; color:var(--muted); }
+.clear-btn { cursor:pointer; font-size:16px; color:var(--muted); display:none; }
+
+/* ══ قائمة الغرف ══ */
+.rooms-list { padding:8px 0; }
+
+/* صف غرفة */
+.room-row {
+  display:flex; align-items:center; gap:10px;
+  padding:12px 14px;
+  background:var(--card);
+  border-bottom:1px solid var(--border);
+  cursor:pointer; transition:background .15s;
+}
+.room-row:active { background:#F0F4FF; }
+
+.room-icon {
+  width:48px; height:48px; border-radius:12px;
+  background:linear-gradient(135deg,var(--primary),var(--secondary));
+  display:flex; align-items:center; justify-content:center;
+  font-size:22px; flex-shrink:0;
+  position:relative;
+}
+.room-icon .live-dot {
+  position:absolute; bottom:-3px; right:-3px;
+  width:12px; height:12px; border-radius:50%;
+  background:var(--success); border:2px solid #fff;
+}
+
+.room-info { flex:1; min-width:0; }
+.room-name {
+  font-size:15px; font-weight:700; color:var(--text);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.room-meta {
+  display:flex; align-items:center; gap:10px; margin-top:3px;
+}
+.room-meta span { font-size:12px; color:var(--muted); display:flex; align-items:center; gap:3px; }
+.room-badge {
+  font-size:10px; padding:2px 7px; border-radius:10px; font-weight:600;
+}
+.badge-pub  { background:#E3F2FD; color:#1565C0; }
+.badge-priv { background:#FCE4EC; color:#C62828; }
+
+.fav-btn {
+  font-size:22px; cursor:pointer; flex-shrink:0;
+  opacity:.7; transition:transform .15s;
+}
+.fav-btn.active { opacity:1; }
+.fav-btn:active { transform:scale(1.3); }
+
+/* ══ مجموعة (الغرف المميزة / حسب القسم) ══ */
+.group-header {
+  padding:10px 14px 6px;
+  font-size:12px; font-weight:700;
+  color:var(--muted); text-transform:uppercase;
+  letter-spacing:.5px;
+  background:var(--bg);
+  border-bottom:1px solid var(--border);
+}
+
+/* ══ بطاقة فارغة ══ */
+.empty-state {
+  display:flex; flex-direction:column; align-items:center;
+  padding:60px 24px; gap:12px; color:var(--muted); text-align:center;
+}
+.empty-state .e-icon { font-size:56px; opacity:.5; }
+.empty-state p { font-size:14px; }
+
+/* ══ STATS BAR ══ */
+.stats-bar {
+  background:var(--card); border-top:1px solid var(--border);
+  display:flex; justify-content:center; gap:32px;
+  padding:6px 0;
+}
+.stat { display:flex; align-items:center; gap:5px; font-size:12px; color:var(--muted); }
+.stat strong { color:var(--text); font-weight:700; }
+
+/* ══ BOTTOM NAV ══ */
+.bottom-nav {
+  position:fixed; bottom:0; right:0; left:0; z-index:100;
+  height:var(--bottom-h);
+  background:var(--card);
+  border-top:1px solid var(--border);
+  display:flex;
+  box-shadow:0 -2px 8px rgba(0,0,0,0.06);
+}
+.nav-btn {
+  flex:1; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; gap:3px; cursor:pointer;
+  font-size:11px; font-weight:600; color:var(--muted);
+  transition:color .2s;
+}
+.nav-btn .nav-icon { font-size:22px; }
+.nav-btn.active { color:var(--primary); }
+
+/* ══ FAB إنشاء غرفة ══ */
+.fab {
+  position:fixed; bottom:calc(var(--bottom-h) + 14px); left:16px;
+  width:52px; height:52px; border-radius:50%;
+  background:var(--primary); color:#fff;
+  font-size:26px; display:flex; align-items:center; justify-content:center;
+  box-shadow:0 4px 16px rgba(44,62,122,.4);
+  cursor:pointer; z-index:99; transition:transform .15s;
+  display:none; /* يظهر فقط للـ Owner+ */
+}
+.fab:active { transform:scale(.93); }
+
+/* ══ MODAL إنشاء غرفة ══ */
+.modal-overlay {
+  position:fixed; inset:0; z-index:200;
+  background:rgba(0,0,0,.5); display:none; align-items:flex-end;
+}
+.modal-overlay.show { display:flex; }
+.modal-sheet {
+  width:100%; background:var(--card);
+  border-radius:20px 20px 0 0;
+  padding:20px 16px 32px;
+  animation:slideUp .25s ease;
+}
+@keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+.modal-title {
+  font-size:17px; font-weight:700; color:var(--text);
+  margin-bottom:16px; text-align:center;
+}
+.form-field { margin-bottom:14px; }
+.form-field label { font-size:13px; font-weight:600; color:var(--muted); display:block; margin-bottom:6px; }
+.form-field input, .form-field select {
+  width:100%; height:48px; border:1px solid var(--border);
+  border-radius:10px; padding:0 14px;
+  font-family:'Tajawal',sans-serif; font-size:14px;
+  color:var(--text); background:var(--bg); outline:none;
+  direction:rtl;
+}
+.form-field input:focus, .form-field select:focus {
+  border-color:var(--secondary);
+}
+.btn-create {
+  width:100%; height:50px; background:var(--primary);
+  color:#fff; border:none; border-radius:12px;
+  font-family:'Tajawal',sans-serif; font-size:16px; font-weight:700;
+  cursor:pointer; margin-top:6px;
+}
+.btn-cancel {
+  width:100%; height:44px; background:transparent;
+  color:var(--muted); border:none;
+  font-family:'Tajawal',sans-serif; font-size:14px;
+  cursor:pointer; margin-top:4px;
+}
+
+/* ══ Toast ══ */
+.toast {
+  position:fixed; bottom:calc(var(--bottom-h) + 12px);
+  right:50%; transform:translateX(50%);
+  background:var(--text); color:#fff;
+  padding:10px 20px; border-radius:10px;
+  font-size:13px; font-weight:500;
+  z-index:500; opacity:0; pointer-events:none;
+  transition:opacity .3s; white-space:nowrap;
+}
+.toast.show { opacity:1; }
+
+/* ══ Skeleton Loading ══ */
+.skeleton {
+  background:linear-gradient(90deg,#e8e8e8 25%,#f5f5f5 50%,#e8e8e8 75%);
+  background-size:200% 100%;
+  animation:shimmer 1.4s infinite;
+  border-radius:8px;
+}
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+.skel-row {
+  display:flex; align-items:center; gap:10px;
+  padding:12px 14px; border-bottom:1px solid var(--border);
+}
+</style>
 </head>
 <body>
-  <div class="navbar">
-    <h1>WidBid</h1>
-    <div class="user">
-      <span class="username" id="usernameDisplay"></span>
-      <button class="btn-logout" onclick="logout()">خروج</button>
+
+<!-- ══ HEADER ══ -->
+<div class="header">
+  <div class="logo">W<span>i</span>dBid</div>
+  <div class="header-right">
+    <span class="h-icon notif-badge" id="notifBtn">🔔</span>
+    <span class="h-icon" id="profileBtn">👤</span>
+  </div>
+</div>
+
+<!-- ══ TABS ══ -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('all')" id="tab-all">
+    <span class="tab-icon">🏠</span>الغرف
+  </div>
+  <div class="tab" onclick="switchTab('fav')" id="tab-fav">
+    <span class="tab-icon">❤️</span>المفضلة
+  </div>
+  <div class="tab" onclick="switchTab('search')" id="tab-search">
+    <span class="tab-icon">🔍</span>بحث
+  </div>
+  <div class="tab" onclick="switchTab('more')" id="tab-more">
+    <span class="tab-icon">···</span>المزيد
+  </div>
+</div>
+
+<!-- ══ CONTENT ══ -->
+<div class="content">
+
+  <!-- تبويب: كل الغرف -->
+  <div class="tab-pane active" id="pane-all">
+    <div id="roomsList"></div>
+    <div class="stats-bar" id="statsBar">
+      <div class="stat">👥 <strong id="totalUsers">—</strong> مستخدم</div>
+      <div class="stat">💬 <strong id="totalRooms">—</strong> غرفة</div>
     </div>
   </div>
 
-  <div class="container">
-    <div class="header">
-      <h2>الغرف المتاحة</h2>
-      <button class="btn-create" onclick="showModal()">+ إنشاء غرفة</button>
-    </div>
-    <div class="rooms-grid" id="roomsGrid"></div>
+  <!-- تبويب: المفضلة -->
+  <div class="tab-pane" id="pane-fav">
+    <div id="favList"></div>
   </div>
 
-  <div class="modal" id="createModal">
-    <div class="modal-card">
-      <h3>إنشاء غرفة جديدة</h3>
-      <div class="form-group">
-        <label>اسم الغرفة</label>
-        <input type="text" id="roomName" placeholder="اسم الغرفة" />
+  <!-- تبويب: البحث -->
+  <div class="tab-pane" id="pane-search">
+    <div class="search-wrap">
+      <div class="search-box">
+        <span class="s-icon">🔍</span>
+        <input id="searchInput" placeholder="ابحث باسم الغرفة أو رقمها..." autocomplete="off" />
+        <span class="clear-btn" id="clearBtn" onclick="clearSearch()">✕</span>
       </div>
-      <div class="form-group">
-        <label>النوع</label>
-        <select id="roomType">
-          <option value="public">عامة</option>
-          <option value="private">خاصة</option>
-        </select>
-      </div>
-      <div class="modal-btns">
-        <button class="btn-confirm" onclick="createRoom()">إنشاء</button>
-        <button class="btn-cancel" onclick="hideModal()">إلغاء</button>
+    </div>
+    <div id="searchResults">
+      <div class="empty-state">
+        <div class="e-icon">🔍</div>
+        <p>اكتب اسم الغرفة أو رقمها للبحث</p>
       </div>
     </div>
   </div>
 
-  <script>
-    const token = localStorage.getItem('token');
-    const username = localStorage.getItem('username');
+  <!-- تبويب: المزيد -->
+  <div class="tab-pane" id="pane-more">
+    <div style="padding:0;">
+      <div class="room-row" onclick="openSettings()">
+        <div class="room-icon" style="background:linear-gradient(135deg,#607D8B,#90A4AE)">⚙️</div>
+        <div class="room-info"><div class="room-name">الإعدادات</div></div>
+      </div>
+      <div class="room-row" onclick="openMarket()">
+        <div class="room-icon" style="background:linear-gradient(135deg,#F0A500,#F5CC50)">🛒</div>
+        <div class="room-info"><div class="room-name">WidBid Market</div><div class="room-meta"><span>شراء الباقات والخدمات</span></div></div>
+      </div>
+      <div class="room-row" onclick="openPoints()">
+        <div class="room-icon" style="background:linear-gradient(135deg,#9C27B0,#CE93D8)">💎</div>
+        <div class="room-info"><div class="room-name">نقاطي</div><div class="room-meta"><span id="myPointsText">جاري التحميل...</span></div></div>
+      </div>
+      <div class="room-row" onclick="openSupport()">
+        <div class="room-icon" style="background:linear-gradient(135deg,#27AE60,#81C784)">💬</div>
+        <div class="room-info"><div class="room-name">خدمة العملاء</div></div>
+      </div>
+      <div class="room-row" onclick="reloadList()">
+        <div class="room-icon" style="background:linear-gradient(135deg,#4A90D9,#90CAF9)">🔄</div>
+        <div class="room-info"><div class="room-name">تحديث القائمة</div></div>
+      </div>
+      <div class="room-row" style="color:#E74C3C" onclick="logout()">
+        <div class="room-icon" style="background:linear-gradient(135deg,#E74C3C,#EF9A9A)">🚪</div>
+        <div class="room-info"><div class="room-name" style="color:#E74C3C">تسجيل الخروج</div></div>
+      </div>
+      <div style="padding:16px;text-align:center;color:var(--muted);font-size:12px;">
+        WidBid v1.0 — جميع الحقوق محفوظة
+      </div>
+    </div>
+  </div>
+</div>
 
-    if (!token) window.location.href = '/';
+<!-- ══ FAB ══ -->
+<div class="fab" id="fab" onclick="openCreateModal()">＋</div>
 
-    document.getElementById('usernameDisplay').textContent = username;
+<!-- ══ MODAL إنشاء غرفة ══ -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal-sheet">
+    <div class="modal-title">إنشاء غرفة جديدة</div>
+    <div class="form-field">
+      <label>اسم الغرفة</label>
+      <input id="newRoomName" placeholder="مثال: ديوانية النخبة" maxlength="50" />
+    </div>
+    <div class="form-field">
+      <label>نوع الغرفة</label>
+      <select id="newRoomType">
+        <option value="public">عامة 🌐</option>
+        <option value="private">خاصة 🔒</option>
+      </select>
+    </div>
+    <button class="btn-create" onclick="createRoom()">إنشاء الغرفة</button>
+    <button class="btn-cancel" onclick="closeModal()">إلغاء</button>
+  </div>
+</div>
 
-    async function loadRooms() {
-      const res = await fetch('/api/rooms');
-      const data = await res.json();
-      const grid = document.getElementById('roomsGrid');
-      grid.innerHTML = '';
-      data.rooms.forEach(room => {
-        const card = document.createElement('div');
-        card.className = 'room-card';
-        card.innerHTML = `
-          <div class="room-name">${room.name}</div>
-          <div class="room-info">
-            <span>👥 ${room.member_count} عضو</span>
-          </div>
-          <span class="room-type ${room.type}">${room.type === 'public' ? 'عامة' : 'خاصة'}</span>
-        `;
-        card.onclick = () => {
-          localStorage.setItem('room_id', room.id);
-          localStorage.setItem('room_name', room.name);
-          window.location.href = '/chat.html';
-        };
-        grid.appendChild(card);
-      });
+<!-- ══ Toast ══ -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ════════════════════════════════════════
+   WidBid Rooms — Mobile First
+════════════════════════════════════════ */
+const token    = localStorage.getItem('token');
+const userId   = parseInt(localStorage.getItem('user_id')) || 0;
+const username = localStorage.getItem('username') || 'زائر';
+const userRank = parseInt(localStorage.getItem('rank')) || 100;
+
+if (!token) window.location.href = '/';
+
+// إظهار FAB للـ Owner فأعلى
+if (userRank >= 1100) document.getElementById('fab').style.display = 'flex';
+
+// نقاط المستخدم
+async function loadPoints() {
+  if (!userId) return;
+  try {
+    const r = await fetch(`/api/points/balance`, {
+      headers: { Authorization: token }
+    });
+    const d = await r.json();
+    if (d.balance !== undefined) {
+      document.getElementById('myPointsText').textContent = `💎 ${d.balance} نقطة`;
     }
+  } catch {}
+}
+loadPoints();
 
-    async function createRoom() {
-      const name = document.getElementById('roomName').value;
-      const type = document.getElementById('roomType').value;
-      const res = await fetch('/api/rooms/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'authorization': token },
-        body: JSON.stringify({ name, type, owner_id: 1 })
-      });
-      const data = await res.json();
-      if (data.success) {
-        hideModal();
-        loadRooms();
-      }
-    }
+/* ── الغرف ────────────────────────────── */
+let allRooms = [];
+let favorites = JSON.parse(localStorage.getItem('wid_favorites') || '[]');
 
-    function showModal() { document.getElementById('createModal').classList.add('show'); }
-    function hideModal() { document.getElementById('createModal').classList.remove('show'); }
-    function logout() { localStorage.clear(); window.location.href = '/'; }
+const ROOM_EMOJIS = ['🏠','🌟','🎯','🎮','🎵','📚','☕','🌙','🌺','🎭','🏆','💫'];
+function getRoomEmoji(id) { return ROOM_EMOJIS[id % ROOM_EMOJIS.length]; }
 
-    loadRooms();
-  </script>
+async function loadRooms() {
+  const list = document.getElementById('roomsList');
+  // Skeleton
+  list.innerHTML = Array(4).fill(`
+    <div class="skel-row">
+      <div class="skeleton" style="width:48px;height:48px;border-radius:12px;flex-shrink:0"></div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+        <div class="skeleton" style="height:14px;width:60%"></div>
+        <div class="skeleton" style="height:11px;width:40%"></div>
+      </div>
+    </div>`).join('');
+
+  try {
+    const r = await fetch('/api/rooms', {
+      headers: { Authorization: token }
+    });
+    const d = await r.json();
+    if (!d.success) throw new Error();
+    allRooms = d.rooms || [];
+    renderRooms(allRooms);
+    updateStats(allRooms);
+  } catch {
+    list.innerHTML = `<div class="empty-state">
+      <div class="e-icon">😕</div>
+      <p>تعذّر تحميل الغرف، اضغط لإعادة المحاولة</p>
+    </div>`;
+    list.querySelector('.empty-state').onclick = loadRooms;
+  }
+}
+
+function renderRooms(rooms) {
+  const list = document.getElementById('roomsList');
+  if (!rooms.length) {
+    list.innerHTML = `<div class="empty-state">
+      <div class="e-icon">🏠</div><p>لا توجد غرف متاحة حالياً</p></div>`;
+    return;
+  }
+
+  // تقسيم: مميزة (عضو أكثر) + عادية
+  const sorted = [...rooms].sort((a,b) => (b.member_count||0) - (a.member_count||0));
+  const featured = sorted.slice(0, 3);
+  const regular  = sorted.slice(3);
+
+  let html = '';
+
+  if (featured.length) {
+    html += `<div class="group-header">⭐ الغرف المميزة</div>`;
+    featured.forEach(r => { html += buildRoomRow(r, true); });
+  }
+  if (regular.length) {
+    html += `<div class="group-header">🏠 جميع الغرف</div>`;
+    regular.forEach(r => { html += buildRoomRow(r, false); });
+  }
+
+  list.innerHTML = html;
+}
+
+function buildRoomRow(room, isFeatured = false) {
+  const isFav   = favorites.includes(room.id);
+  const members = room.member_count || 0;
+  const isPriv  = room.type === 'private';
+  const emoji   = getRoomEmoji(room.id);
+  const bgStyle = isFeatured
+    ? 'background:linear-gradient(135deg,#2C3E7A,#4A90D9)'
+    : 'background:linear-gradient(135deg,#4A5568,#718096)';
+
+  return `
+  <div class="room-row" onclick="enterRoom(${room.id},'${escHtml(room.name)}')">
+    <div class="room-icon" style="${bgStyle}">
+      ${emoji}
+      <div class="live-dot"></div>
+    </div>
+    <div class="room-info">
+      <div class="room-name">${escHtml(room.name)}</div>
+      <div class="room-meta">
+        <span>👥 ${members}</span>
+        <span class="room-badge ${isPriv ? 'badge-priv' : 'badge-pub'}">${isPriv ? '🔒 خاصة' : '🌐 عامة'}</span>
+        ${room.id ? `<span style="color:#aaa">#${room.id}</span>` : ''}
+      </div>
+    </div>
+    <span class="fav-btn ${isFav ? 'active' : ''}"
+      onclick="toggleFav(event,${room.id})">${isFav ? '⭐' : '☆'}</span>
+  </div>`;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function updateStats(rooms) {
+  const totalUsers = rooms.reduce((s,r) => s + (r.member_count||0), 0);
+  document.getElementById('totalUsers').textContent = totalUsers;
+  document.getElementById('totalRooms').textContent = rooms.length;
+}
+
+/* ── دخول غرفة ────────────────────────── */
+function enterRoom(id, name) {
+  localStorage.setItem('room_id',   id);
+  localStorage.setItem('room_name', name);
+  window.location.href = '/chat.html';
+}
+
+/* ── المفضلة ─────────────────────────── */
+function toggleFav(e, id) {
+  e.stopPropagation();
+  const idx = favorites.indexOf(id);
+  if (idx === -1) {
+    favorites.push(id);
+    showToast('⭐ أُضيفت للمفضلة');
+  } else {
+    favorites.splice(idx, 1);
+    showToast('حُذفت من المفضلة');
+  }
+  localStorage.setItem('wid_favorites', JSON.stringify(favorites));
+  // تحديث الأيقونة بدون إعادة رسم
+  const btn = e.target;
+  const isFav = favorites.includes(id);
+  btn.textContent = isFav ? '⭐' : '☆';
+  btn.classList.toggle('active', isFav);
+  // تحديث تبويب المفضلة إذا كان مفتوحاً
+  if (document.getElementById('pane-fav').classList.contains('active')) renderFav();
+}
+
+function renderFav() {
+  const list = document.getElementById('favList');
+  const favRooms = allRooms.filter(r => favorites.includes(r.id));
+  if (!favRooms.length) {
+    list.innerHTML = `<div class="empty-state">
+      <div class="e-icon">☆</div>
+      <p>لم تضف أي غرفة للمفضلة بعد</p></div>`;
+    return;
+  }
+  list.innerHTML = favRooms.map(r => buildRoomRow(r)).join('');
+}
+
+/* ── البحث ───────────────────────────── */
+const searchInput = document.getElementById('searchInput');
+const clearBtn    = document.getElementById('clearBtn');
+
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.trim();
+  clearBtn.style.display = q ? 'block' : 'none';
+  if (!q) {
+    document.getElementById('searchResults').innerHTML = `
+      <div class="empty-state">
+        <div class="e-icon">🔍</div>
+        <p>اكتب اسم الغرفة أو رقمها للبحث</p></div>`;
+    return;
+  }
+  const results = allRooms.filter(r =>
+    r.name.toLowerCase().includes(q.toLowerCase()) ||
+    String(r.id).includes(q)
+  );
+  const res = document.getElementById('searchResults');
+  if (!results.length) {
+    res.innerHTML = `<div class="empty-state">
+      <div class="e-icon">🔎</div>
+      <p>لا توجد نتائج لـ "${escHtml(q)}"</p></div>`;
+  } else {
+    res.innerHTML = results.map(r => buildRoomRow(r)).join('');
+  }
+});
+
+function clearSearch() {
+  searchInput.value = '';
+  clearBtn.style.display = 'none';
+  searchInput.dispatchEvent(new Event('input'));
+  searchInput.focus();
+}
+
+/* ── التبويبات ───────────────────────── */
+function switchTab(tab) {
+  ['all','fav','search','more'].forEach(t => {
+    document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
+    document.getElementById(`pane-${t}`).classList.toggle('active', t === tab);
+  });
+  if (tab === 'fav')    renderFav();
+  if (tab === 'search') searchInput.focus();
+}
+
+/* ── إنشاء غرفة ─────────────────────── */
+function openCreateModal() {
+  document.getElementById('modalOverlay').classList.add('show');
+}
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modalOverlay')) {
+    document.getElementById('modalOverlay').classList.remove('show');
+  }
+}
+async function createRoom() {
+  const name = document.getElementById('newRoomName').value.trim();
+  const type = document.getElementById('newRoomType').value;
+  if (!name) { showToast('⚠️ أدخل اسم الغرفة'); return; }
+
+  try {
+    const r = await fetch('/api/rooms/create', {
+      method:'POST',
+      headers: { 'Content-Type':'application/json', Authorization:token },
+      body: JSON.stringify({ name, type, owner_id: userId })
+    });
+    const d = await r.json();
+    if (d.success) {
+      closeModal();
+      showToast('✅ تم إنشاء الغرفة');
+      document.getElementById('newRoomName').value = '';
+      setTimeout(loadRooms, 800);
+    } else { showToast('⚠️ ' + (d.message || 'خطأ')); }
+  } catch { showToast('⚠️ تعذّر إنشاء الغرفة'); }
+}
+
+/* ── أحداث متفرقة ───────────────────── */
+function reloadList() { switchTab('all'); loadRooms(); showToast('🔄 جاري التحديث...'); }
+function openSettings() { showToast('⚙️ الإعدادات — قريباً'); }
+function openMarket()   { showToast('🛒 WidBid Market — قريباً'); }
+function openPoints()   { showToast('💎 نقاطي — قريباً'); }
+function openSupport()  { showToast('💬 خدمة العملاء — قريباً'); }
+function logout() {
+  if (!confirm('هل تريد تسجيل الخروج؟')) return;
+  localStorage.clear();
+  window.location.href = '/';
+}
+
+/* ── Toast ───────────────────────────── */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+/* ── تهيئة ───────────────────────────── */
+loadRooms();
+</script>
 </body>
 </html>
