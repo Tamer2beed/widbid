@@ -31,7 +31,14 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Wrong password' });
     }
     const token = jwt.sign({ id: user.id, username: user.username }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    res.json({ success: true, token, username: user.username });
+    res.json({
+      success:  true,
+      token,
+      user_id:  user.id,
+      username: user.username,
+      rank:     user.rank || 100,
+      email:    user.email,
+    });
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ success: false, message: 'Server error' });
