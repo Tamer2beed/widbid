@@ -125,6 +125,22 @@ html,body { height:100%; overflow:hidden; font-family:'Tajawal',sans-serif; back
 }
 .member-avatar .mic-active.on { display:block; }
 .member-name { font-size:12px; font-weight:500; color:var(--rank-100); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.member-badge {
+  font-size:9px; font-weight:700; padding:1px 5px;
+  border-radius:6px; margin-top:2px; display:inline-block;
+}
+.member-status-dot {
+  position:absolute; bottom:-1px; right:-1px;
+  width:10px; height:10px; border-radius:50%;
+  border:1.5px solid #fff; background:#aaa;
+}
+.status-available { background:var(--success); }
+.status-busy      { background:var(--danger); }
+.status-away      { background:var(--warning); }
+.status-phone     { background:var(--secondary); }
+.status-food      { background:#8BC34A; }
+.status-sleep     { background:#9C27B0; }
+.status-car       { background:#607D8B; }
 
 /* ═══════════ CHAT AREA ═══════════ */
 .chat-area {
@@ -808,31 +824,86 @@ document.getElementById('msgInput').addEventListener('keypress', e => {
 function renderMembers(users) {
   const list = document.getElementById('membersList');
   list.innerHTML = '';
-  users.forEach(u => {
-    const name   = typeof u === 'string' ? u : u.username;
-    const rank   = typeof u === 'object' ? (u.rank||100) : 100;
-    const status = typeof u === 'object' ? (u.status||'available') : 'available';
-    const color  = getRankColor(rank);
+
+  // ── ترتيب حسب الرتبة (الأعلى أولاً) ──
+  const sorted = [...users].sort((a, b) => {
+    const ra = typeof a === 'object' ? (a.rank||100) : 100;
+    const rb = typeof b === 'object' ? (b.rank||100) : 100;
+    return rb - ra;
+  });
+
+  // ── رسم كل عضو ──
+  sorted.forEach(u => {
+    const name      = typeof u === 'string' ? u : u.username;
+    const rank      = typeof u === 'object' ? (u.rank||100)   : 100;
+    const status    = typeof u === 'object' ? (u.status||'available') : 'available';
+    const isMuted   = typeof u === 'object' ? (u.isMuted||false) : false;
+    const color     = getRankColor(rank);
+    const rankLabel = getRankName(rank);
+    const isMe      = name === username;
 
     const item = document.createElement('div');
     item.className = 'member-item';
     item.dataset.username = name;
 
+    // ── الأفاتار ──
     const av = document.createElement('div');
     av.className = 'member-avatar';
     av.style.borderColor = color;
-    av.innerHTML = `${getInitial(name)}<span class="mic-active"></span>`;
+    av.style.opacity = isMuted ? '0.5' : '1';
 
+    // مؤشر الحالة
+    const statusDot = document.createElement('span');
+    statusDot.className = `member-status-dot status-${status}`;
+
+    // مؤشر الكلام
+    const micDot = document.createElement('span');
+    micDot.className = 'mic-active';
+
+    av.textContent = getInitial(name);
+    av.appendChild(statusDot);
+    av.appendChild(micDot);
+
+    // ── المعلومات ──
+    const info = document.createElement('div');
+    info.style.cssText = 'flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;';
+
+    // الاسم
     const nm = document.createElement('div');
     nm.className = 'member-name';
     nm.style.color = color;
-    nm.textContent = name;
+    nm.textContent = name + (isMe ? ' (أنا)' : '') + (isMuted ? ' 🔇' : '');
 
+    // شارة الرتبة (للـ Member فأعلى)
+    const badge = document.createElement('span');
+    badge.className = 'member-badge';
+    badge.style.cssText = `background:${color}22;color:${color};`;
+
+    if (rank >= 1200)      badge.textContent = '👑 S.Owner';
+    else if (rank >= 1100) badge.textContent = '👑 Owner';
+    else if (rank >= 1000) badge.textContent = '🌿 S.Root';
+    else if (rank >= 900)  badge.textContent = '🔧 Root';
+    else if (rank >= 800)  badge.textContent = '⚡ S.Master';
+    else if (rank >= 700)  badge.textContent = '🔴 Master';
+    else if (rank >= 600)  badge.textContent = '🟢 S.Admin';
+    else if (rank >= 500)  badge.textContent = '🔵 Admin';
+    else if (rank >= 400)  badge.textContent = '✨ Royal';
+    else if (rank >= 300)  badge.textContent = '🛡️ Protected';
+    else if (rank >= 200)  badge.textContent = '👤 Member';
+    else                   badge.textContent = '👁️ Guest';
+
+    info.appendChild(nm);
+    info.appendChild(badge);
     item.appendChild(av);
-    item.appendChild(nm);
+    item.appendChild(info);
+
+    // Context menu عند النقر
     item.addEventListener('click', () => showMemberMenu(name, rank));
     list.appendChild(item);
   });
+
+  // ── تحديث عدد المتواجدين ──
+  document.getElementById('statOnline').textContent = sorted.length;
 }
 
 function updateMemberStatus(username, status) {
@@ -1130,37 +1201,59 @@ function openAdminSheet() {
   const isAdmin      = userRank >= 500;
   const isSuperAdmin = userRank >= 600;
 
-  title.textContent = userRank >= 600 ? '🔰 أدوات السوبر أدمن' : '🔰 أدوات الأدمن';
+  if (isSuperAdmin)      title.textContent = '🟢 أدوات السوبر أدمن';
+  else if (isAdmin)      title.textContent = '🔵 أدوات الأدمن';
 
   const tools = [
+    // ── Admin (500+) ──────────────────────────
     {
-      icon:'🗑️', bg:'#FFE0E0', label:'مسح الشات',
-      desc:'مسح جميع الرسائل للجميع',
+      icon:'🗑️', bg:'#FFE0E0',
+      label:'مسح الشات',
+      desc:'حذف جميع الرسائل من الشاشة',
       fn: clearChat, show: isAdmin
     },
     {
-      icon:'🔇', bg:'#FFF3CD', label:'كتم الجميع',
+      icon:'🔇', bg:'#FFF3CD',
+      label:'كتم الجميع',
       desc:'منع Guest و Member من الكتابة',
       fn: muteAll, show: isAdmin
     },
     {
-      icon:'🔊', bg:'#D4EDDA', label:'فك كتم الجميع',
-      desc:'السماح للجميع بالكتابة',
+      icon:'🔊', bg:'#D4EDDA',
+      label:'فك كتم الجميع',
+      desc:'السماح للجميع بالكتابة مجدداً',
       fn: unmuteAll, show: isAdmin
     },
     {
-      icon:'📋', bg:'#D1ECF1', label:'قائمة المكتومين',
-      desc:'عرض الأعضاء المكتومين حالياً',
-      fn: showMutedList, show: isSuperAdmin
-    },
-    {
-      icon:'📊', bg:'#E2D9F3', label:'إحصائيات الغرفة',
+      icon:'📊', bg:'#E2D9F3',
+      label:'إحصائيات الغرفة',
       desc:`${document.getElementById('statOnline').textContent} متواجد الآن`,
       fn: showRoomStats, show: isAdmin
     },
+
+    // ── Super Admin (600+) ────────────────────
+    {
+      icon:'👥', bg:'#D1ECF1',
+      label:'قائمة المشرفين',
+      desc:'عرض Admin و Super Admin في الغرفة',
+      fn: showAdminsList, show: isSuperAdmin
+    },
+    {
+      icon:'📢', bg:'#FDE8D8',
+      label:'رسالة عامة من الإدارة',
+      desc:'إرسال إعلان للجميع',
+      fn: openAnnouncementDialog, show: isSuperAdmin
+    },
+    {
+      icon:'📋', bg:'#E8F5E9',
+      label:'المكتومون الآن',
+      desc:'قائمة الأعضاء المكتومين',
+      fn: showMutedList, show: isSuperAdmin
+    },
   ];
 
-  toolList.innerHTML = tools.filter(t => t.show).map((t,i) => `
+  const visible = tools.filter(t => t.show);
+  toolList.innerHTML = visible.map((t,i) => `
     <div class="admin-tool" onclick="handleAdminTool(${i})">
       <div class="t-icon" style="background:${t.bg}">${t.icon}</div>
       <div class="t-info">
@@ -1170,9 +1263,7 @@ function openAdminSheet() {
     </div>
   `).join('');
 
-  // حفظ الدوال للاستدعاء
-  window._adminTools = tools.filter(t => t.show);
-
+  window._adminTools = visible;
   sheet.classList.add('open');
   overlay.classList.add('show');
 }
@@ -1195,11 +1286,123 @@ function unmuteAll() {
   socket.emit('unmuteAll', { room_id: roomId, by: username });
   showToast('🔊 تم فك كتم الجميع');
 }
-function showMutedList() { showToast('📋 قائمة المكتومين — قريباً'); }
-function showRoomStats()  { showToast(`📊 المتواجدون: ${document.getElementById('statOnline').textContent}`); }
-function unmuteUser(name) {
-  socket.emit('unmuteUser', { room_id: roomId, target: name, by: username });
-  showToast(`🔊 تم فك كتم ${name}`);
+function showRoomStats() {
+  const online = document.getElementById('statOnline').textContent;
+  const msgs   = document.getElementById('statMsgs').textContent;
+  showToast(`👥 ${online} متواجد | 💬 ${msgs} رسالة`);
+}
+
+// ── Super Admin: قائمة المشرفين ─────────────
+function showAdminsList() {
+  // نجمع الأعضاء الذين رتبتهم 500–699
+  const sheet = document.createElement('div');
+  sheet.style.cssText = `
+    position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.5);
+    display:flex;align-items:flex-end;
+  `;
+  const inner = document.createElement('div');
+  inner.style.cssText = `
+    width:100%;background:#fff;border-radius:20px 20px 0 0;
+    padding:16px 16px 32px;max-height:70vh;overflow-y:auto;
+  `;
+  inner.innerHTML = `
+    <div style="font-size:15px;font-weight:700;color:#1A1A2E;text-align:center;
+      margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #eee">
+      👥 المشرفون في الغرفة
+    </div>
+    <div id="adminsListContent" style="font-size:13px;color:#555;text-align:center;padding:16px">
+      جاري التحميل...
+    </div>
+    <button onclick="this.closest('[style]').remove()" style="
+      width:100%;height:44px;background:#f5f5f5;color:#888;
+      border:none;border-radius:10px;font-family:Tajawal,sans-serif;
+      font-size:14px;cursor:pointer;margin-top:12px">إغلاق</button>
+  `;
+  sheet.appendChild(inner);
+  sheet.onclick = (e) => { if (e.target === sheet) sheet.remove(); };
+  document.body.appendChild(sheet);
+
+  // طلب قائمة المشرفين من السيرفر
+  socket.emit('getAdminsList', { room_id: roomId });
+  socket.once('adminsList', (admins) => {
+    const el = document.getElementById('adminsListContent');
+    if (!admins.length) {
+      el.textContent = 'لا يوجد مشرفون في الغرفة حالياً';
+      return;
+    }
+    el.innerHTML = admins.map(a => `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 4px;
+        border-bottom:1px solid #f0f0f0;">
+        <div style="width:36px;height:36px;border-radius:50%;
+          background:linear-gradient(135deg,#2C3E7A,#4A90D9);
+          display:flex;align-items:center;justify-content:center;
+          color:#fff;font-weight:700;font-size:13px;
+          border:2px solid ${getRankColor(a.rank)}">
+          ${getInitial(a.username)}
+        </div>
+        <div style="flex:1">
+          <div style="font-weight:600;color:${getRankColor(a.rank)}">${a.username}</div>
+          <div style="font-size:11px;color:#999">${getRankName(a.rank)}</div>
+        </div>
+        ${userRank > a.rank ? `
+          <div onclick="kickUser('${a.username}')" style="
+            padding:5px 10px;background:#FFE0E0;color:#E74C3C;
+            border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">
+            طرد
+          </div>` : ''}
+      </div>
+    `).join('');
+  });
+}
+
+// ── Super Admin: إعلان عام ───────────────────
+function openAnnouncementDialog() {
+  const dialog = document.createElement('div');
+  dialog.style.cssText = `
+    position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.5);
+    display:flex;align-items:center;justify-content:center;padding:20px;
+  `;
+  dialog.innerHTML = `
+    <div style="background:#fff;border-radius:16px;padding:20px;
+      width:100%;max-width:340px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+      <div style="font-size:16px;font-weight:700;color:#1A1A2E;margin-bottom:12px">
+        📢 رسالة من الإدارة
+      </div>
+      <textarea id="announceTxt" placeholder="اكتب رسالتك هنا..." style="
+        width:100%;height:90px;border:1.5px solid #E0E0E0;border-radius:10px;
+        padding:10px;resize:none;outline:none;
+        font-family:Tajawal,sans-serif;font-size:13px;direction:rtl"></textarea>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button onclick="sendAnnouncement(this)" style="
+          flex:1;height:44px;background:#2C3E7A;color:#fff;border:none;
+          border-radius:10px;font-family:Tajawal,sans-serif;
+          font-size:14px;font-weight:600;cursor:pointer">إرسال</button>
+        <button onclick="this.closest('[style]').remove()" style="
+          flex:1;height:44px;background:#f5f5f5;color:#888;border:none;
+          border-radius:10px;font-family:Tajawal,sans-serif;
+          font-size:14px;cursor:pointer">إلغاء</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(dialog);
+}
+
+function sendAnnouncement(btn) {
+  const txt = document.getElementById('announceTxt').value.trim();
+  if (!txt) { showToast('⚠️ اكتب الرسالة أولاً'); return; }
+  socket.emit('announcement', { room_id: roomId, text: txt, by: username });
+  btn.closest('[style]').remove();
+  showToast('📢 تم إرسال الإعلان');
+}
+
+// ── Super Admin: المكتومون ──────────────────
+function showMutedList() {
+  socket.emit('getMutedList', { room_id: roomId });
+  socket.once('mutedList', (list) => {
+    if (!list.length) { showToast('✅ لا يوجد أحد مكتوم حالياً'); return; }
+    const names = list.map(u => u.username).join('، ');
+    showToast(`🔇 مكتومون: ${names}`);
+  });
 }
 
 // ── تحذير رسمي (Super Admin 600+) ──────────
@@ -1320,6 +1523,22 @@ socket.on('chatCleared', (d) => {
 
 // رسالة نظام عامة
 socket.on('systemMessage', (text) => { addSystem(typeof text === 'string' ? text : text.text || ''); });
+
+// إعلان من الإدارة
+socket.on('announcement', (d) => {
+  const el = document.createElement('div');
+  el.style.cssText = `
+    background:linear-gradient(135deg,#2C3E7A,#4A90D9);
+    color:#fff;border-radius:12px;padding:12px 14px;
+    margin:8px 0;position:relative;z-index:1;
+  `;
+  el.innerHTML = `
+    <div style="font-size:11px;opacity:.7;margin-bottom:4px">📢 إعلان من ${d.by}</div>
+    <div style="font-size:14px;font-weight:500">${d.text}</div>
+  `;
+  document.getElementById('messages').appendChild(el);
+  document.getElementById('messages').scrollTop = 9999;
+});
 
 // تغيير الثيم
 socket.on('themeChanged',   (d) => { applyTheme(d.theme); addSystem(`🎨 تم تغيير الثيم بواسطة ${d.by}`); });
