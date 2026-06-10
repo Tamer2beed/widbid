@@ -402,6 +402,32 @@ io.on('connection', (socket) => {
       symbol:  'X',
     });
   });
+/* ─── قائمة المشرفين (Super Admin 600+) ────── */
+  socket.on('getAdminsList', async (data) => {
+    if ((socket.userData?.rank || 0) < 600) return;
+    const roomSockets = await io.in(data.room_id).fetchSockets();
+    const admins = roomSockets
+      .filter(s => s.userData?.rank >= 500 && s.userData?.rank < 700)
+      .map(s => ({ username: s.userData.username, rank: s.userData.rank }));
+    socket.emit('adminsList', admins);
+  });
+
+  /* ─── قائمة المكتومين (Super Admin 600+) ───── */
+  socket.on('getMutedList', async (data) => {
+    if ((socket.userData?.rank || 0) < 600) return;
+    const roomSockets = await io.in(data.room_id).fetchSockets();
+    const muted = roomSockets
+      .filter(s => s.userData?.isMuted)
+      .map(s => ({ username: s.userData.username }));
+    socket.emit('mutedList', muted);
+  });
+
+  /* ─── إعلان عام (Super Admin 600+) ─────────── */
+  socket.on('announcement', (data) => {
+    if ((socket.userData?.rank || 0) < 600) return;
+    const { room_id, text, by } = data;
+    io.to(room_id).emit('announcement', { text, by });
+  });
 
   /* ─── كتم الجميع ──────────────────────────── */
   socket.on('muteAll', async (data) => {
