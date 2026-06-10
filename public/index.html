@@ -1,135 +1,600 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WidBid - دردشة</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Arial; background: #0d0d1a; color: white; height: 100vh; display: flex; flex-direction: column; }
-    .navbar { background: #16213e; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1a2a4a; }
-    .navbar .right { display: flex; align-items: center; gap: 12px; }
-    .btn-back { padding: 6px 14px; background: transparent; color: #c9a84c; border: 1px solid #c9a84c; border-radius: 6px; cursor: pointer; font-size: 13px; }
-    .room-title { color: #c9a84c; font-size: 16px; font-weight: bold; }
-    .username-badge { color: #aaa; font-size: 13px; }
-    .main { display: flex; flex: 1; overflow: hidden; }
-    .chat-area { flex: 1; display: flex; flex-direction: column; }
-    #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; }
-    .msg { max-width: 75%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.5; }
-    .msg.mine { background: #c9a84c; color: #0d0d1a; align-self: flex-end; border-bottom-right-radius: 3px; }
-    .msg.other { background: #16213e; color: white; align-self: flex-start; border-bottom-left-radius: 3px; border: 1px solid #1a2a4a; }
-    .msg.system { background: transparent; color: #555; font-size: 12px; align-self: center; font-style: italic; }
-    .msg-username { font-size: 11px; color: #c9a84c; margin-bottom: 4px; font-weight: bold; }
-    .input-area { padding: 15px; background: #16213e; border-top: 1px solid #1a2a4a; display: flex; gap: 10px; }
-    .input-area input { flex: 1; padding: 11px 15px; background: #0d0d1a; border: 1px solid #1a2a4a; border-radius: 25px; color: white; font-size: 14px; outline: none; }
-    .input-area input:focus { border-color: #c9a84c; }
-    .btn-send { padding: 11px 22px; background: #c9a84c; color: #0d0d1a; border: none; border-radius: 25px; cursor: pointer; font-weight: bold; font-size: 14px; }
-    .btn-send:hover { background: #e0bc5e; }
-    .sidebar { width: 200px; background: #16213e; border-right: 1px solid #1a2a4a; padding: 15px; overflow-y: auto; }
-    .sidebar h3 { color: #c9a84c; font-size: 13px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #1a2a4a; }
-    #userList { list-style: none; }
-    #userList li { padding: 7px 5px; font-size: 13px; color: #aaa; border-bottom: 1px solid #1a2a4a; display: flex; align-items: center; gap: 7px; }
-    #userList li::before { content: '●'; color: #4caf82; font-size: 10px; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>WidBid — دخول</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary:   #2C3E7A;
+  --secondary: #4A90D9;
+  --accent:    #F0A500;
+  --success:   #27AE60;
+  --danger:    #E74C3C;
+  --card:      #FFFFFF;
+  --text:      #1A1A2E;
+  --muted:     #7F8C8D;
+  --border:    #E0E0E0;
+  --bg:        #F4F6F9;
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body {
+  min-height:100%;
+  font-family:'Tajawal',sans-serif;
+  background:linear-gradient(160deg, var(--primary) 0%, #1a2a5e 40%, var(--secondary) 100%);
+}
+
+/* ══ WRAPPER ══ */
+.wrapper {
+  min-height:100vh;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  padding:24px 16px 40px;
+}
+
+/* ══ LOGO ══ */
+.logo-wrap { text-align:center; margin-bottom:24px; }
+.logo-text {
+  font-size:42px; font-weight:900; color:#fff;
+  letter-spacing:4px; line-height:1;
+}
+.logo-text span { color:var(--accent); }
+.logo-sub { color:rgba(255,255,255,0.6); font-size:13px; margin-top:6px; }
+
+/* ══ CARD ══ */
+.card {
+  width:100%; max-width:420px;
+  background:var(--card);
+  border-radius:24px;
+  box-shadow:0 16px 48px rgba(0,0,0,0.25);
+  overflow:hidden;
+}
+
+/* ══ TABS ══ */
+.tabs {
+  display:flex;
+  background:var(--bg);
+  border-bottom:1px solid var(--border);
+}
+.tab {
+  flex:1; padding:14px 4px; text-align:center;
+  font-size:13px; font-weight:600; color:var(--muted);
+  cursor:pointer; border-bottom:2px solid transparent;
+  margin-bottom:-1px; transition:all .2s;
+}
+.tab.active { color:var(--primary); border-bottom-color:var(--primary); background:var(--card); }
+
+/* ══ PANES ══ */
+.pane { display:none; padding:20px 20px 24px; }
+.pane.active { display:block; }
+
+/* ══ FORM ══ */
+.field { margin-bottom:14px; }
+.field label {
+  display:block; font-size:12px; font-weight:700;
+  color:var(--muted); margin-bottom:6px;
+}
+.input-wrap {
+  position:relative; display:flex; align-items:center;
+}
+.input-wrap .i-icon {
+  position:absolute; right:13px; font-size:17px;
+  color:var(--muted); pointer-events:none;
+}
+.input-wrap input, .input-wrap select {
+  width:100%; height:50px;
+  border:1.5px solid var(--border);
+  border-radius:12px;
+  padding:0 42px 0 14px;
+  font-family:'Tajawal',sans-serif; font-size:14px;
+  color:var(--text); background:var(--bg);
+  outline:none; direction:rtl;
+  transition:border-color .2s;
+}
+.input-wrap input:focus, .input-wrap select:focus {
+  border-color:var(--secondary);
+  background:#fff;
+}
+.toggle-pass {
+  position:absolute; left:13px; font-size:17px;
+  cursor:pointer; color:var(--muted);
+}
+
+/* ══ COUNTRY SELECTOR ══ */
+.country-select {
+  display:flex; align-items:center; gap:10px;
+  height:50px;
+  border:1.5px solid var(--border); border-radius:12px;
+  padding:0 12px; background:var(--bg); cursor:pointer;
+}
+.country-select .flag { font-size:24px; }
+.country-select .country-name { flex:1; font-size:14px; color:var(--text); }
+.country-select .arrow { color:var(--muted); }
+
+/* ══ AVATAR GRID ══ */
+.avatar-section { margin-bottom:14px; }
+.avatar-label {
+  font-size:12px; font-weight:700; color:var(--muted); margin-bottom:8px;
+}
+.avatar-grid {
+  display:grid; grid-template-columns:repeat(6,1fr); gap:6px;
+  max-height:180px; overflow-y:auto;
+  padding:4px 2px;
+}
+.avatar-grid::-webkit-scrollbar { width:3px; }
+.avatar-grid::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+.av-item {
+  aspect-ratio:1; border-radius:50%;
+  background:linear-gradient(135deg,#4A5568,#718096);
+  display:flex; align-items:center; justify-content:center;
+  font-size:20px; cursor:pointer;
+  border:2.5px solid transparent;
+  transition:transform .15s, border-color .15s;
+}
+.av-item:active { transform:scale(.92); }
+.av-item.selected {
+  border-color:var(--accent);
+  transform:scale(1.08);
+  box-shadow:0 0 0 3px rgba(240,165,0,.2);
+}
+
+/* ══ REMEMBER / FORGOT ══ */
+.row-check {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:16px;
+}
+.check-wrap { display:flex; align-items:center; gap:6px; cursor:pointer; }
+.check-wrap input[type=checkbox] { width:16px; height:16px; accent-color:var(--primary); }
+.check-wrap span { font-size:13px; color:var(--muted); }
+.link-btn { font-size:13px; color:var(--secondary); cursor:pointer; }
+
+/* ══ BUTTONS ══ */
+.btn-main {
+  width:100%; height:52px;
+  background:var(--primary); color:#fff;
+  border:none; border-radius:14px;
+  font-family:'Tajawal',sans-serif; font-size:16px; font-weight:700;
+  cursor:pointer; position:relative; overflow:hidden;
+  transition:background .2s;
+}
+.btn-main:active { background:#1e2d5a; }
+.btn-main.loading::after {
+  content:''; position:absolute; inset:0;
+  background:rgba(255,255,255,.15);
+}
+.btn-sec {
+  width:100%; height:46px; margin-top:10px;
+  background:transparent; color:var(--primary);
+  border:1.5px solid var(--primary); border-radius:14px;
+  font-family:'Tajawal',sans-serif; font-size:14px; font-weight:600;
+  cursor:pointer;
+}
+.divider {
+  display:flex; align-items:center; gap:10px;
+  margin:14px 0; color:var(--muted); font-size:12px;
+}
+.divider::before, .divider::after {
+  content:''; flex:1; height:1px; background:var(--border);
+}
+
+/* ══ ERROR ══ */
+.err-msg {
+  font-size:12px; color:var(--danger); font-weight:500;
+  margin-top:8px; text-align:center; min-height:18px;
+}
+.succ-msg {
+  font-size:12px; color:var(--success); font-weight:500;
+  margin-top:8px; text-align:center; min-height:18px;
+}
+
+/* ══ COUNTRY DROPDOWN ══ */
+.country-dropdown {
+  position:fixed; inset:0; z-index:300;
+  background:rgba(0,0,0,.5); display:none; align-items:flex-end;
+}
+.country-dropdown.show { display:flex; }
+.country-sheet {
+  width:100%; background:var(--card);
+  border-radius:20px 20px 0 0; max-height:70vh;
+  display:flex; flex-direction:column;
+  animation:slideUp .25s ease;
+}
+@keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+.country-search {
+  padding:12px 16px; border-bottom:1px solid var(--border);
+}
+.country-search input {
+  width:100%; height:42px; border:1px solid var(--border);
+  border-radius:10px; padding:0 12px;
+  font-family:'Tajawal',sans-serif; font-size:14px; outline:none;
+  direction:rtl;
+}
+.country-list { overflow-y:auto; flex:1; }
+.country-item {
+  display:flex; align-items:center; gap:12px;
+  padding:13px 16px; border-bottom:1px solid var(--border);
+  cursor:pointer;
+}
+.country-item:active { background:var(--bg); }
+.country-item .flag { font-size:26px; }
+.country-item .name { font-size:14px; font-weight:500; color:var(--text); }
+
+/* ══ SPINNER ══ */
+.spinner {
+  display:inline-block; width:20px; height:20px;
+  border:2.5px solid rgba(255,255,255,.3);
+  border-top-color:#fff; border-radius:50%;
+  animation:spin .7s linear infinite; vertical-align:middle;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+</style>
 </head>
 <body>
-  <div class="navbar">
-    <div class="right">
-      <button class="btn-back" onclick="window.location.href='/rooms.html'">الغرف</button>
-      <span class="room-title" id="roomTitle"></span>
-    </div>
-    <span class="username-badge" id="usernameDisplay"></span>
+<div class="wrapper">
+
+  <!-- LOGO -->
+  <div class="logo-wrap">
+    <div class="logo-text">W<span>i</span>dBid</div>
+    <div class="logo-sub">منصة الدردشة العربية</div>
   </div>
 
-  <div class="main">
-    <div class="sidebar">
-      <h3>المتصلون</h3>
-      <ul id="userList"></ul>
+  <!-- CARD -->
+  <div class="card">
+
+    <!-- TABS -->
+    <div class="tabs">
+      <div class="tab active" id="tab-guest"   onclick="switchTab('guest')">👤 زائر</div>
+      <div class="tab"        id="tab-member"  onclick="switchTab('member')">🔑 عضو</div>
+      <div class="tab"        id="tab-register" onclick="switchTab('register')">✨ جديد</div>
     </div>
-    <div class="chat-area">
-      <div id="messages"></div>
-      <div class="input-area">
-        <input id="msgInput" placeholder="اكتب رسالة..." />
-        <button class="btn-send" onclick="sendMessage()">إرسال</button>
+
+    <!-- ════ تبويب زائر ════ -->
+    <div class="pane active" id="pane-guest">
+      <div class="field">
+        <label>الاسم المستعار</label>
+        <div class="input-wrap">
+          <span class="i-icon">👤</span>
+          <input id="guestName" placeholder="اكتب اسمك هنا..." maxlength="20" autocomplete="off" />
+        </div>
       </div>
+
+      <div class="field">
+        <label>الدولة</label>
+        <div class="country-select" onclick="openCountryPicker()">
+          <span class="flag" id="selFlag">🌍</span>
+          <span class="country-name" id="selCountry">اختر دولتك</span>
+          <span class="arrow">▼</span>
+        </div>
+      </div>
+
+      <div class="avatar-section">
+        <div class="avatar-label">اختر صورتك</div>
+        <div class="avatar-grid" id="avatarGrid"></div>
+      </div>
+
+      <button class="btn-main" id="guestBtn" onclick="guestLogin()">دخول كزائر</button>
+      <div class="err-msg" id="guestErr"></div>
     </div>
+
+    <!-- ════ تبويب عضو ════ -->
+    <div class="pane" id="pane-member">
+      <div class="field">
+        <label>البريد الإلكتروني</label>
+        <div class="input-wrap">
+          <span class="i-icon">📧</span>
+          <input type="email" id="loginEmail" placeholder="example@email.com" autocomplete="email" />
+        </div>
+      </div>
+      <div class="field">
+        <label>كلمة المرور</label>
+        <div class="input-wrap">
+          <span class="i-icon">🔒</span>
+          <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password" id="loginPassInput" />
+          <span class="toggle-pass" onclick="togglePass('loginPass')">👁️</span>
+        </div>
+      </div>
+      <div class="row-check">
+        <label class="check-wrap">
+          <input type="checkbox" id="rememberMe" />
+          <span>تذكرني</span>
+        </label>
+        <span class="link-btn" onclick="forgotPass()">نسيت كلمة المرور؟</span>
+      </div>
+      <button class="btn-main" id="loginBtn" onclick="memberLogin()">دخول</button>
+      <div class="err-msg" id="loginErr"></div>
+    </div>
+
+    <!-- ════ تبويب تسجيل جديد ════ -->
+    <div class="pane" id="pane-register">
+      <div class="field">
+        <label>اسم المستخدم</label>
+        <div class="input-wrap">
+          <span class="i-icon">👤</span>
+          <input id="regUsername" placeholder="اسمك في المنصة" maxlength="20" autocomplete="username" />
+        </div>
+      </div>
+      <div class="field">
+        <label>البريد الإلكتروني</label>
+        <div class="input-wrap">
+          <span class="i-icon">📧</span>
+          <input type="email" id="regEmail" placeholder="example@email.com" autocomplete="email" />
+        </div>
+      </div>
+      <div class="field">
+        <label>كلمة المرور</label>
+        <div class="input-wrap">
+          <span class="i-icon">🔒</span>
+          <input type="password" id="regPass" placeholder="6 أحرف على الأقل" autocomplete="new-password" />
+          <span class="toggle-pass" onclick="togglePass('regPass')">👁️</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>تأكيد كلمة المرور</label>
+        <div class="input-wrap">
+          <span class="i-icon">🔒</span>
+          <input type="password" id="regPass2" placeholder="أعد كتابة كلمة المرور" autocomplete="new-password" />
+        </div>
+      </div>
+      <button class="btn-main" id="regBtn" onclick="register()">إنشاء الحساب</button>
+      <div class="err-msg"  id="regErr"></div>
+      <div class="succ-msg" id="regSucc"></div>
+    </div>
+
+  </div><!-- /card -->
+
+  <!-- VERSION -->
+  <div style="color:rgba(255,255,255,.4);font-size:11px;margin-top:20px">WidBid v1.0</div>
+</div>
+
+<!-- ════ COUNTRY DROPDOWN ════ -->
+<div class="country-dropdown" id="countryDropdown" onclick="closeCountryPicker(event)">
+  <div class="country-sheet">
+    <div class="country-search">
+      <input id="countrySearch" placeholder="ابحث عن دولة..." oninput="filterCountries()" />
+    </div>
+    <div class="country-list" id="countryList"></div>
   </div>
+</div>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const token = localStorage.getItem('token');
-    const username = localStorage.getItem('username');
-    const room_id = localStorage.getItem('room_id');
-    const room_name = localStorage.getItem('room_name');
+<script>
+/* ════════════════════════════════════════
+   WidBid Login — Mobile First
+════════════════════════════════════════ */
 
-    if (!token) window.location.href = '/';
+// إذا كان مسجلاً مسبقاً → توجيه مباشر
+if (localStorage.getItem('token')) {
+  window.location.href = '/rooms.html';
+}
 
-    document.getElementById('roomTitle').textContent = room_name;
-    document.getElementById('usernameDisplay').textContent = username;
+/* ── التبويبات ───────────────────────── */
+function switchTab(tab) {
+  ['guest','member','register'].forEach(t => {
+    document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
+    document.getElementById(`pane-${t}`).classList.toggle('active', t === tab);
+  });
+  clearErrors();
+}
 
-    const socket = io();
-    socket.emit('joinRoom', { room_id, username });
+/* ── الأفاتارات ──────────────────────── */
+const AVATARS = [
+  '😀','😎','🤩','😍','🥳','🤓','😇','🦸','🧙','🧝',
+  '👦','👧','👨','👩','🧔','👴','👵','🧒','🧑','🧓',
+  '🐱','🐶','🦊','🐻','🐼','🐨','🐯','🦁','🐸','🐺',
+  '🌟','⚡','🔥','💎','🎯','🎮','🎵','🏆','💫','🌈',
+  '🌙','☀️','🌊','🌺','🌸','🌻','🍀','🌴','🦋','🦄',
+  '🚀','✈️','⚽','🎸','🎨','📚','🎭','🎪','🎠','🏅',
+];
 
-    socket.on('messageHistory', (messages) => {
-      messages.forEach(msg => addMessage(msg.username, msg.content, msg.username === username));
+let selectedAvatar = AVATARS[0];
+
+function buildAvatarGrid() {
+  const grid = document.getElementById('avatarGrid');
+  grid.innerHTML = AVATARS.map((a, i) => `
+    <div class="av-item ${i===0?'selected':''}" onclick="selectAvatar(this,'${a}')">${a}</div>
+  `).join('');
+}
+buildAvatarGrid();
+
+function selectAvatar(el, av) {
+  document.querySelectorAll('.av-item').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedAvatar = av;
+}
+
+/* ── الدول ───────────────────────────── */
+const COUNTRIES = [
+  {flag:'🇸🇦', name:'السعودية'},     {flag:'🇮🇶', name:'العراق'},
+  {flag:'🇦🇪', name:'الإمارات'},     {flag:'🇸🇾', name:'سوريا'},
+  {flag:'🇯🇴', name:'الأردن'},       {flag:'🇰🇼', name:'الكويت'},
+  {flag:'🇶🇦', name:'قطر'},          {flag:'🇧🇭', name:'البحرين'},
+  {flag:'🇴🇲', name:'عُمان'},        {flag:'🇾🇪', name:'اليمن'},
+  {flag:'🇪🇬', name:'مصر'},          {flag:'🇱🇧', name:'لبنان'},
+  {flag:'🇱🇾', name:'ليبيا'},        {flag:'🇹🇳', name:'تونس'},
+  {flag:'🇩🇿', name:'الجزائر'},      {flag:'🇲🇦', name:'المغرب'},
+  {flag:'🇸🇩', name:'السودان'},      {flag:'🇵🇸', name:'فلسطين'},
+  {flag:'🇩🇪', name:'ألمانيا'},      {flag:'🇬🇧', name:'المملكة المتحدة'},
+  {flag:'🇫🇷', name:'فرنسا'},        {flag:'🇺🇸', name:'أمريكا'},
+  {flag:'🇨🇦', name:'كندا'},         {flag:'🇦🇺', name:'أستراليا'},
+  {flag:'🇹🇷', name:'تركيا'},        {flag:'🇮🇷', name:'إيران'},
+  {flag:'🌍', name:'دولة أخرى'},
+];
+
+let selectedCountry = null;
+
+function renderCountries(list = COUNTRIES) {
+  document.getElementById('countryList').innerHTML = list.map(c => `
+    <div class="country-item" onclick="selectCountry('${c.flag}','${c.name}')">
+      <span class="flag">${c.flag}</span>
+      <span class="name">${c.name}</span>
+    </div>
+  `).join('');
+}
+renderCountries();
+
+function openCountryPicker() {
+  document.getElementById('countryDropdown').classList.add('show');
+  document.getElementById('countrySearch').value = '';
+  renderCountries();
+  setTimeout(() => document.getElementById('countrySearch').focus(), 300);
+}
+function closeCountryPicker(e) {
+  if (e.target === document.getElementById('countryDropdown')) {
+    document.getElementById('countryDropdown').classList.remove('show');
+  }
+}
+function selectCountry(flag, name) {
+  selectedCountry = { flag, name };
+  document.getElementById('selFlag').textContent    = flag;
+  document.getElementById('selCountry').textContent = name;
+  document.getElementById('countryDropdown').classList.remove('show');
+}
+function filterCountries() {
+  const q = document.getElementById('countrySearch').value.trim();
+  renderCountries(q ? COUNTRIES.filter(c => c.name.includes(q)) : COUNTRIES);
+}
+
+/* ── إظهار/إخفاء كلمة المرور ─────────── */
+function togglePass(id) {
+  const inp = document.getElementById(id);
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+/* ── دخول كزائر ──────────────────────── */
+function guestLogin() {
+  const name = document.getElementById('guestName').value.trim();
+  if (!name) { showErr('guestErr', 'أدخل اسماً مستعاراً'); return; }
+  if (name.length < 2) { showErr('guestErr', 'الاسم قصير جداً'); return; }
+
+  setLoading('guestBtn', true);
+  // Guest لا يحتاج API — نحفظ بياناته محلياً
+  localStorage.setItem('username',  name);
+  localStorage.setItem('user_id',   '0');
+  localStorage.setItem('rank',      '100');
+  localStorage.setItem('avatar',    selectedAvatar);
+  localStorage.setItem('country',   selectedCountry?.name || 'غير محدد');
+  localStorage.setItem('token',     'guest_' + Date.now());
+  // لا نحفظ token حقيقي — سيُفلتر في السيرفر إذا احتيج
+
+  setTimeout(() => window.location.href = '/rooms.html', 400);
+}
+
+/* ── دخول عضو ────────────────────────── */
+async function memberLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPass').value;
+  if (!email || !pass) { showErr('loginErr', 'أدخل البريد وكلمة المرور'); return; }
+
+  setLoading('loginBtn', true);
+  try {
+    const r = await fetch('/api/auth/login', {
+      method:'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ email, password: pass }),
     });
-
-    socket.on('newMessage', (data) => {
-      addMessage(data.username, data.message, data.username === username);
-    });
-
-    socket.on('userJoined', (data) => {
-      addSystem(data.username + ' انضم للغرفة');
-    });
-
-    socket.on('userLeft', (data) => {
-      addSystem(data.username + ' غادر الغرفة');
-    });
-
-    socket.on('onlineUsers', (users) => {
-      const list = document.getElementById('userList');
-      list.innerHTML = '';
-      users.forEach(u => {
-        const li = document.createElement('li');
-        li.textContent = u;
-        list.appendChild(li);
-      });
-    });
-
-    function addMessage(user, message, isMe) {
-      const div = document.createElement('div');
-      div.className = 'msg ' + (isMe ? 'mine' : 'other');
-      if (!isMe) {
-        const name = document.createElement('div');
-        name.className = 'msg-username';
-        name.textContent = user;
-        div.appendChild(name);
+    const d = await r.json();
+    if (d.success) {
+      localStorage.setItem('token',    d.token);
+      localStorage.setItem('user_id',  d.user_id);
+      localStorage.setItem('username', d.username);
+      localStorage.setItem('rank',     d.rank || 100);
+      if (document.getElementById('rememberMe').checked) {
+        localStorage.setItem('saved_email', email);
       }
-      const text = document.createElement('div');
-      text.textContent = message;
-      div.appendChild(text);
-      document.getElementById('messages').appendChild(div);
-      document.getElementById('messages').scrollTop = 999999;
+      window.location.href = '/rooms.html';
+    } else {
+      showErr('loginErr', d.message === 'Email not found' ? 'البريد غير مسجل'
+                        : d.message === 'Wrong password'  ? 'كلمة المرور خاطئة'
+                        : d.message || 'خطأ في الدخول');
     }
+  } catch {
+    showErr('loginErr', 'تعذّر الاتصال بالسيرفر');
+  } finally {
+    setLoading('loginBtn', false);
+  }
+}
 
-    function addSystem(text) {
-      const div = document.createElement('div');
-      div.className = 'msg system';
-      div.textContent = text;
-      document.getElementById('messages').appendChild(div);
-    }
+// تعبئة البريد المحفوظ
+const savedEmail = localStorage.getItem('saved_email');
+if (savedEmail) {
+  document.getElementById('loginEmail').value = savedEmail;
+  document.getElementById('rememberMe').checked = true;
+}
 
-    function sendMessage() {
-      const message = document.getElementById('msgInput').value;
-      if (message.trim()) {
-        socket.emit('sendMessage', { room_id, user_id: 1, username, message });
-        document.getElementById('msgInput').value = '';
-      }
-    }
+/* ── تسجيل جديد ──────────────────────── */
+async function register() {
+  const username = document.getElementById('regUsername').value.trim();
+  const email    = document.getElementById('regEmail').value.trim();
+  const pass     = document.getElementById('regPass').value;
+  const pass2    = document.getElementById('regPass2').value;
 
-    document.getElementById('msgInput').addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') sendMessage();
+  if (!username || !email || !pass) { showErr('regErr', 'أكمل جميع الحقول'); return; }
+  if (username.length < 3)          { showErr('regErr', 'الاسم قصير جداً (3 أحرف على الأقل)'); return; }
+  if (pass.length < 6)              { showErr('regErr', 'كلمة المرور قصيرة جداً (6 أحرف)'); return; }
+  if (pass !== pass2)               { showErr('regErr', 'كلمتا المرور غير متطابقتين'); return; }
+
+  setLoading('regBtn', true);
+  try {
+    const r = await fetch('/api/auth/register', {
+      method:'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ username, email, password: pass }),
     });
-  </script>
+    const d = await r.json();
+    if (d.success) {
+      document.getElementById('regErr').textContent   = '';
+      document.getElementById('regSucc').textContent  = '✅ تم إنشاء حسابك! جاري الدخول...';
+      // دخول تلقائي بعد التسجيل
+      setTimeout(async () => {
+        document.getElementById('loginEmail').value = email;
+        document.getElementById('loginPass').value  = pass;
+        switchTab('member');
+        await memberLogin();
+      }, 1200);
+    } else {
+      showErr('regErr', d.message?.includes('already') ? 'الاسم أو البريد مستخدم مسبقاً' : d.message || 'خطأ');
+    }
+  } catch {
+    showErr('regErr', 'تعذّر الاتصال بالسيرفر');
+  } finally {
+    setLoading('regBtn', false);
+  }
+}
+
+/* ── نسيت كلمة المرور ────────────────── */
+function forgotPass() {
+  alert('لاسترداد كلمة المرور، تواصل مع الدعم عبر قسم "المزيد" بعد الدخول.');
+}
+
+/* ── أدوات مساعدة ────────────────────── */
+function showErr(id, msg) {
+  document.getElementById(id).textContent = msg;
+}
+function clearErrors() {
+  ['guestErr','loginErr','regErr','regSucc'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = '';
+  });
+}
+function setLoading(btnId, on) {
+  const btn = document.getElementById(btnId);
+  if (on) {
+    btn.dataset.orig = btn.textContent;
+    btn.innerHTML = '<span class="spinner"></span>';
+    btn.disabled  = true;
+  } else {
+    btn.innerHTML = btn.dataset.orig || 'دخول';
+    btn.disabled  = false;
+  }
+}
+
+/* ── Enter للإرسال ───────────────────── */
+document.getElementById('loginPass').addEventListener('keypress', e => {
+  if (e.key === 'Enter') memberLogin();
+});
+document.getElementById('guestName').addEventListener('keypress', e => {
+  if (e.key === 'Enter') guestLogin();
+});
+</script>
 </body>
 </html>
